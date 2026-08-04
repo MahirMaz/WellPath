@@ -1,0 +1,19 @@
+{
+  "name": "healthcare-lifestyle-analytics-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "scripts\\vite.cmd --host 127.0.0.1",
+    "build": "scripts\\vite.cmd build",
+    "preview": "scripts\\vite.cmd preview --host 127.0.0.1",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest"
+  }
+}

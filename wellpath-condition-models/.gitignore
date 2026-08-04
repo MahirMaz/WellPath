@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Raw and processed participant data
+data/raw/nhanes/*
+!data/raw/nhanes/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Generated research artifacts
+outputs/charts/*
+!outputs/charts/.gitkeep
+outputs/tables/*
+!outputs/tables/.gitkeep
+outputs/models/*
+!outputs/models/.gitkeep
+outputs/predictions/*
+!outputs/predictions/.gitkeep

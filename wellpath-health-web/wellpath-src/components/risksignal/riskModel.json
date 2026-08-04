@@ -1,0 +1,97 @@
+{
+  "outcome": "elevated HbA1c (\u22655.7%, the prediabetes-and-above range)",
+  "n": 4799,
+  "cv_auc": 0.776,
+  "intercept": -0.4754507582256408,
+  "features": [
+    {
+      "key": "age",
+      "label": "Age",
+      "type": "cont",
+      "coef": 0.9533572520998741,
+      "mean": 51.194207126484685,
+      "std": 17.570503479690853
+    },
+    {
+      "key": "bmi",
+      "label": "Body-mass index (BMI)",
+      "type": "cont",
+      "coef": 0.4598853181746723,
+      "mean": 29.812085851219006,
+      "std": 7.319928587562679
+    },
+    {
+      "key": "systolic_bp",
+      "label": "Systolic blood pressure",
+      "type": "cont",
+      "coef": 0.10773211958410445,
+      "mean": 126.96207543238175,
+      "std": 19.847569906829413
+    },
+    {
+      "key": "resting_hr",
+      "label": "Resting heart rate",
+      "type": "cont",
+      "coef": 0.13460180260274138,
+      "mean": 71.54490518858096,
+      "std": 11.56266858923642
+    },
+    {
+      "key": "sleep_hours",
+      "label": "Sleep per night",
+      "type": "cont",
+      "coef": -0.13492842098571167,
+      "mean": 7.574286309647843,
+      "std": 1.6459980223250028
+    },
+    {
+      "key": "smoker_ord",
+      "label": "Smoking",
+      "type": "cont",
+      "coef": -0.030737756481501514,
+      "mean": 0.6028339237341113,
+      "std": 0.7765049069358543
+    },
+    {
+      "key": "sex_female",
+      "label": "Sex",
+      "type": "bin",
+      "coef": -0.320696293489187
+    },
+    {
+      "key": "vigorous_activity",
+      "label": "Vigorous activity",
+      "type": "bin",
+      "coef": -0.19885015293991898
+    },
+    {
+      "key": "moderate_activity",
+      "label": "Moderate activity",
+      "type": "bin",
+      "coef": 0.01214755015353633
+    },
+    {
+      "key": "fh_diabetes",
+      "label": "Family history of diabetes",
+      "type": "bin",
+      "coef": 0.651900101262189
+    }
+  ],
+  "band_cuts": [
+    0.289745326649333,
+    0.5749165882790531
+  ],
+  "defaults": {
+    "age": 40,
+    "bmi": 27.0,
+    "systolic_bp": 120,
+    "resting_hr": 70,
+    "sleep_hours": 7.0,
+    "smoker_ord": 0,
+    "sex_female": 1,
+    "vigorous_activity": 0,
+    "moderate_activity": 1,
+    "fh_diabetes": 0
+  },
+  "source": "NHANES 2017-2018, adults 18+. Research prototype; not diagnostic."
+}

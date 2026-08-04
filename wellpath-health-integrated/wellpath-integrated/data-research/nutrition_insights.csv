@@ -1,0 +1,13 @@
+condition,nutrient,odds_ratio_per_sd,p_value,delta_auc
+diabetes,sodium,1.115,0.0909,0.0
+diabetes,fiber,1.105,0.0189,0.0
+diabetes,sat_fat,1.064,0.3457,0.0
+diabetes,sugar,1.076,0.1642,0.0
+hypertension,sodium,1.033,0.5873,0.0
+hypertension,fiber,0.895,0.0064,0.0
+hypertension,sat_fat,0.91,0.1242,0.0
+hypertension,sugar,0.995,0.9166,0.0
+cholesterol,sodium,0.867,0.1393,-0.008
+cholesterol,fiber,1.004,0.9506,-0.008
+cholesterol,sat_fat,0.963,0.6915,-0.008
+cholesterol,sugar,0.862,0.0579,-0.008

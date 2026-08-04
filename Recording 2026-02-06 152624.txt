@@ -1,0 +1,165 @@
+(Transcribed by TurboScribe. Go Unlimited to remove this message.)
+
+I'm going to help you guys on the technical side of the use case and if you have any challenges there too. Yeah, and I'll wait for someone to come back because I want you guys to provide an introduction when she's there so you don't have to repeat it again. So let's wait for that.
+
+Yeah, she'll be here in two minutes, so maybe we can do a bit of it. It's all good. Maybe you guys can provide some of the introduction.
+
+It's not an interview, so you don't have to like being introduction. I really like to know the hobbies, what you do after you done with the classes on all those kinds of stuff. I'm on mute. 
+
+I'm so sorry I was in a workshop. How's everybody doing? Good yourself? Doing good. Yeah, so I mean like this is a discovery call, right? And I was told by Kunal that you guys already have your pitch ready for the project.
+
+So maybe a round of introduction and then we can start with what you have to show. I can start with my introduction first and then Sachin can go ahead and then how about that? And then you guys can take over. You already did yours. 
+
+OK, yeah, so my name is Saman. I'm working at Deloitte right now in their data and AI practice and I'm in the strategy and the. Yeah, I'm in the strategy team. 
+
+My brain is not working. I was in a two hour workshop. Sorry.
+
+Yeah, I'm in this. I'm in the strategy practice of data and AI within Deloitte and happy to support your team with whatever project you know, like. Assignment you have.
+
+So nice to meet you. Maybe I'll go next, so. Yeah, sorry, I'll go. 
+
+OK, so I'm Jonathan. I'm in the same program as well, and my expertise is more on the data side, so I've had multiple coops as a basically data analyst, so that's will be my contribution on the project. And then on the personal side, you know, after school and work, I enjoy working out, playing video games and spending time with my family and friends.
+
+Nice. I guess I'll go next to my name is John Junior. I'm also in the same program as them. 
+
+I would say, like my expertise here, I'm good at data analysis to also UI. And I would say that what I like to do outside of school, I like to read and also listen to music. Nice. 
+
+Nice to meet you. And my name is Buntong. I am previously have a cooperative in a mobile application, so I have some experience with developing Android application.
+
+And I also enjoy in developing front end using like JavaScript and also like some small game using C++ and Java. Nice meeting you all. Same here.
+
+Okay, sounds good. Okay, sounds good. Okay, so I think you can you guys can start.
+
+Yeah, we can go to the second part of it. Let's get started. Sounds good.
+
+So this is simply calls for us to get a bit more background on the project. How how we got to the point where this you feel this project was needed. So I guess we can start with that. 
+
+What's kind of the background? How you got to the point where you felt this solution was needed? Who, how it's going to be distributed, you know, if you're selling into a business or if it's for consumers. Just a bit of the background on how we got to this point. Are you asking us? Yes, yes.
+
+Okay, so first I need to understand that. How have you adapted what we have shared with you? Like we shared an idea, I think. And then Kunal shared it with you. 
+
+Yeah, I think the intent was that you guys will take that idea and further progress it. The the from where our idea was basically coming was what we have seen across the industry and the major pain points that that organizations currently have, which is related to data integration. You know, between different platforms and and how data is kind of, you know, like unstructured and not integrated platforms are not integrated together.
+
+So the initial idea was basically that if those if the data all comes together and we are able to run analytics on it, it would. And, you know, we get the data from the patients across their across their journey, like, you know, and not only the clinical data, but also data related to their health and lifestyle and etc. Then we can move towards preventing diseases rather than going forward with a cure, which is not existing once you actually get the disease.
+
+Right. So that that was the idea. The user of this platform or whatever you guys build the end.
+
+Users could be anyone, right? They could be hospitals. First of all, I would say, then they could be also, you know, I would say fitness fitness centers, right? They could also be that they could curate their programs, their fitness programs based on the insights that they get from that. But I think the hard part is to get all that data together for a specific patient across the board from different platforms so that you can actually see meaningful insights.
+
+So they're not only related to clinical, but also related to the food they eat and the number of times they work out their genetics. Right. Which area, which country they are, they are ethnically. 
+
+So population health data is also a part of it. Right. Yeah. 
+
+So that was the idea behind it. Sounds good. Do you have an idea of some of the data sources that are in common between, you know, like the type of data or the platform, common platforms that would be able to, you know, build a reusable template for different.
+
+Yeah, that's the hard part. I mean, we know that there is a lot of data in Epic right now. My chart is also connected to Epic. 
+
+Right. And then we the lifestyle data we don't really have. Right.
+
+Obviously, none of the people, I mean, they are maybe capturing it on their Apple watches, etc. But they are not really though the system is not really integrated and the data is not consistently captured. It's captured one day and it's not captured the other day.
+
+So I think what we I spoke to Kunal was that there is an opportunity for you guys to send out a survey and capture all the data variables that you think would be important for this. Program of yours. And once you capture all of that data, that will be your data subset.
+
+So you are kind of creating a prototype. You're not really creating a real use. I mean, use case, right? It's not something with real data, but that is all you guys can do.
+
+Otherwise, online, if you can go, maybe there is an IntelliHealth platform, which is Ministry of Health's IntelliHealth platform. They have some sort of a public interface for it. Maybe you have access to some data points over there, but I don't think so.
+
+It's complete, to be honest. Yeah. OK, and for the for the data points that we'd want to capture you, I recall you saying that this would be the lifestyle prevention and clinical recommend kind of recommendations.
+
+The type of data that you need, right? So the type of data that you would need is maybe blood parameters and the lifestyle data. Then, you know, how much how much are they working on their genetical data? Right. So you can create those variables yourself.
+
+So let's start from here is that you create those variables yourself and then you create the survey to capture those variables. And then you send out the survey that is going to be your data collection methodology, I would say. OK, OK. 
+
+So there's no predefined, you know, metrics that you would have on your end for what, you know, the way that we're going to provide the lifestyle recommendation. Like someone's blood pressure is too high. Is there any kind of guideline for us to go off of? So once you collect the data, once you collect the data and you run the analytics on it, then only you will find out on that.
+
+Right. Right. I mean, you are not looking at the variables individually.
+
+You are collecting the data and then seeing the the end results of what it's collectively giving you and indicating towards once, you know, like high BP is not going to signify anything. You're not doing you're not doing this by variable, I would say. OK, so is there a specific condition we want to avoid? Like, for example, like, do we want to see if they have cancer or if they're like they're not taking enough steps? Like what what's the what would the final recommendation be like an example output? Well, let's say we had all the health data we wanted for the user. 
+
+What would. That's what you have to. That is what you have to come up with.
+
+I gave you an idea, but the goal that you want to achieve, you have to create your variables and your survey based on that goal. So. I mean, I don't know if you have studied.
+
+You must have studied quantitative analysis and qualitative analysis, stuff like that. Yeah, so maybe I think take baby steps and I think Sachin has put put a data set together in the chat. You can look at that also. 
+
+But did you get that one pager that I sent to Kunal about the project in that there were variables that I had discussed? OK, so it's general health lifestyle recommendation, nothing specific on your end that you would want. I want to I want you to see what is the impact of everything on a person. Like not only I want that is that is the goal, right? Like when you have all the connected data sets and not only the clinical data sets, then when a person or a bunch of like 100 to 200 people are giving you data, you know, their data about everything, not only clinical, but also functional data.
+
+You call it functional, like the way you move, the way what you eat, your genetics, your background, everything. And then it'll be interesting if you if you see some outcomes coming out of it. Right. 
+
+That is what I want you to see. So maybe start backwards, maybe make it open ended. But not not like you have to. 
+
+You can't just like. How do I say this? You have to have an intent. You can't make it completely open ended. 
+
+You have to have an intent so that you you craft that survey and then you send it out. Right. And then once you get the responses based on what you are seeing in the initial slice and dice of your data.
+
+You can narrow down your your project goal. Exactly. Exactly. 
+
+So and also think about things that people will not be comfortable answering. Right. We want to make it simple for you because this is a this is a university project for you.
+
+Right. And we don't like I don't know what Sachin has shared. Maybe you can see maybe that's an example. 
+
+You can see some data points from there. You can you can Google other data sets. Right. 
+
+You can get ideas. You know, like what are your next steps? You can you can Gemini this that you can co-pilot this. You can find out, you know, how to how to collect data.
+
+And it's a it's a it's considerably a simple project because we are not really the problem over here is different. The problem over here, if you look at the real problem, is that it's it's inconsistent data across the board, across different platforms. You as a student, I don't expect that you're going to go at a level of a data platform.
+
+But I want you to still see the impact it actually creates once you have a complete data set from as many as 100 people. Right. Even if they give you firsthand, they complete the survey and they give you the details.
+
+Right. The challenge over here is data collection at the moment. Yeah.
+
+Anything from your end, Sachin? Sachin is, by the way, our technical expert. He he his expertise will come in once you guys, you know, can collect the data and you're slicing and dicing it and playing around with it. He's a champion in that. 
+
+So he'll help you. I just shared this stats camera link. Right. 
+
+Usually they publish the data. So if you're looking at geography wise, if you're looking at which province, whatever they are recording. Right. 
+
+You can see that is useful on one place to just get the data from. Health data may be available on a lot of the websites. Right. 
+
+Just type health data set. You will have many options there to look into it. And I think before even doing that, as a team, you guys should plan that.
+
+What does a complete data set mean? Like, let's say if you have to profile someone, what all information is required? You go to I'll give you some very maybe it's not a direct example, but I feel like examples always help to understand things. So see, if you go to one place, let's say you're going to going to a clinic. Right. 
+
+And then they ask you, OK, what is your health card number? Do you have this? Do you have that? OK. What do you pass something? Right. But there's also a critical information which stored on your Apple Watch data.
+
+Right. So because Apple Watch is monitoring your life, it knows all the things. But there are some. 
+
+But on the government database, it's only whatever, whenever you have visited. Only that information is not about daily activity. So just think like what if you also have a place where you can publicly disclose or maybe disclose that data, provide access to the data with consent, of course, like and then you access to that.
+
+Then you also understand that. OK, maybe there's something else. It is just an example.
+
+Right. So combining those, whatever you visit, you have done plus what daily activity is. Right. 
+
+That is just one example. And then imagine you have a geography data on top of that, which tells that people usually from this region suffer with this. People usually from this region do this.
+
+Right. So that is also important. Right. 
+
+But then if if I don't have access to the data, I as an individual entity have to coordinate with four or five or six or seven or ten different places or departments, you name it, data sources. If I would have had access to those information at first, the impact would have been different. That's like a way of thinking. 
+
+Of course, the problem and the logic can be changed. So any more questions, anything you guys have to ask? Do you guys have any any presentation, any pitch to share with us? This was this was what Kunal told me that you guys want to share something. Yeah. 
+
+Yeah. Yeah. OK. 
+
+Yeah. I think first is the data collection part, right? No, you have you got you got everything. You got everything we needed. 
+
+Yeah. Yeah. I can tell you high level what we propose. 
+
+I can give you a high level overview of what our vision for the final product will be. So when we collect the data, you know, related with the schema, star schema, something like that, and use rules or basic ML models to, you know, predict or make recommendations based on the data we have. And then the final output for the user, whether it's a clinician or whoever, would be, let's say, a Power BI dashboard that, you know, updates on a frequent basis as well.
+
+It has a message saying, you know, your exome is too low or, you know, you're at risk of this. Go see your doctor. Essentially a summary dashboard for, you know, general trends and as well as a recommendation.
+
+That'd be the final. That's a high level overview of what we do. OK. 
+
+Sounds good. Maybe then you guys, you know, take the time back. Maybe we have like five to six minutes and then next week you come prepared with something more granular.
+
+Once you have done a little bit of thinking on the initial ideas. Sounds good. No, basically, I want to know. 
+
+Basically, I want to know what your next steps will be. Right. Yeah. 
+
+Sounds good. We'll get back to sometime next week. Yeah. 
+
+Thank you. No worries. Thank you. 
+
+Thank you. Bye.
+
+(Transcribed by TurboScribe. Go Unlimited to remove this message.)

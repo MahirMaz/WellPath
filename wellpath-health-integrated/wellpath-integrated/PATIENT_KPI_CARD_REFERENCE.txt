@@ -1,0 +1,450 @@
+Patient KPI Card Reference
+==========================
+
+This file describes every KPI card added to the patient home dashboard, including the main displayed value, supporting metrics, progress/status logic, trend logic, graph data, and database/backend fields used.
+
+
+1. Steps
+--------
+Purpose:
+Tracks daily walking/movement volume.
+
+Main value:
+Current daily steps.
+
+Progress circle:
+Shows percentage of the patient's daily step goal.
+Formula: current steps / step goal * 100.
+The visible ring is capped at 100%.
+
+Goal/status text:
+Uses the patient's step goal.
+Example: 8,700 of 10,000.
+
+Trend label:
+Compares today's steps with the recent 7-day average.
+Examples: Above weekly average, Below weekly average, Stable this week.
+
+Expanded metrics:
+- 7-day average steps
+- Personal step target
+
+Graph:
+7-day steps trend.
+
+AI insight:
+Suggests a simple way to increase step count, such as adding a short walk earlier in the day.
+
+Color:
+Green, because steps represent movement/progress.
+
+Backend/database fields:
+- patient_daily_health_fact.steps
+- patient_metric_preferences.step_goal
+
+
+2. Sleep
+--------
+Purpose:
+Tracks sleep duration and basic sleep routine consistency.
+
+Main value:
+Total sleep duration in hours.
+
+Progress circle:
+Shows percentage of the patient's sleep-duration goal.
+Formula: sleep hours / target sleep hours * 100.
+The visible ring is capped at 100%.
+Sleep is not treated as endlessly better if it goes far beyond the target.
+
+Goal/status text:
+Uses the patient's sleep goal.
+Example: 7.1 hrs of 8 hrs.
+
+Trend label:
+Compares today's sleep duration with the recent 7-day average.
+Examples: Above weekly average, Below weekly average, Stable this week.
+
+Expanded metrics:
+- 7-day average sleep
+- Bedtime
+- Wake time
+- Sleep consistency
+- Sleep interruptions
+
+Graph:
+7-day sleep-duration trend.
+
+AI insight:
+Encourages a consistent sleep schedule instead of simply adding more sleep indefinitely.
+
+Color:
+Purple/night tone, because sleep is associated with rest and nighttime.
+
+Backend/database fields:
+- patient_daily_health_fact.sleep_hours
+- patient_daily_health_fact.sleep_bedtime
+- patient_daily_health_fact.sleep_wake_time
+- patient_daily_health_fact.sleep_interruptions
+- patient_daily_health_fact.sleep_consistency
+- patient_metric_preferences.sleep_goal_hours
+
+
+3. Recovery
+-----------
+Purpose:
+Shows a composite recovery score based on rest, heart-rate context, movement, and age.
+
+Main value:
+Recovery score out of 100.
+
+Progress/status circle:
+Shows the recovery score percentage.
+
+Formula:
+- Sleep duration: 30%
+- Sleep consistency: 25%
+- Resting heart-rate status: 20%
+- Exercise minutes: 10%
+- Active minutes: 10%
+- Age context: 5%
+
+Age is used as light context, not as a heavy penalty.
+
+Trend label:
+Uses the recovery score status.
+Examples: Excellent recovery, Good recovery, Moderate recovery, Needs recovery focus.
+
+Expanded metrics:
+- 7-day average recovery score
+- Sleep consistency
+- Resting heart rate
+- Age context
+
+Graph:
+7-day recovery score trend.
+
+AI insight:
+Uses sleep, sleep consistency, heart-rate context, exercise, active minutes, and age to explain the most useful recovery habit to focus on.
+
+Color:
+Teal-green, because recovery connects rest and readiness.
+
+Backend/database fields:
+- patient_daily_health_fact.sleep_hours
+- patient_daily_health_fact.sleep_consistency
+- patient_daily_health_fact.resting_heart_rate
+- patient_daily_health_fact.exercise_minutes
+- patient_daily_health_fact.active_minutes
+- user_pii.age
+
+
+4. Resting Heart Rate
+---------------------
+Purpose:
+Tracks current resting heart rate against the patient's personal baseline.
+
+Main value:
+Current resting heart rate in bpm.
+
+Progress/status circle:
+This is not goal completion.
+The circle represents whether the current heart rate is close to the patient's personal baseline range.
+
+Status logic:
+- Within baseline
+- Slightly above baseline
+- Slightly below baseline
+- Baseline not established
+
+Goal/status text:
+Shows the patient's baseline range.
+Example: 68-74 bpm.
+
+Trend label:
+Uses the baseline status.
+Example: Within baseline.
+
+Expanded metrics:
+- 7-day average resting heart rate
+- Personal baseline
+- Trend over time/status
+
+Graph:
+7-day resting heart rate trend.
+
+AI insight:
+Explains that resting heart rate should be compared against a personal baseline instead of treated like goal completion.
+
+Color:
+Rose/red tone, because the metric relates to heart health.
+
+Backend/database fields:
+- patient_daily_health_fact.resting_heart_rate
+- patient_metric_preferences.resting_hr_baseline_low
+- patient_metric_preferences.resting_hr_baseline_high
+
+
+5. Exercise
+-----------
+Purpose:
+Tracks structured exercise, separate from general movement.
+
+Main value:
+Exercise minutes today.
+
+Progress circle:
+Shows percentage of the patient's exercise-minute goal.
+Formula: exercise minutes / exercise goal minutes * 100.
+The visible ring is capped at 100%.
+
+Goal/status text:
+Uses the patient's daily exercise goal.
+Example: daily goal 60 min.
+
+Trend label:
+Compares today's exercise minutes with the recent 7-day average.
+Examples: Above weekly average, Below weekly average, Stable this week.
+
+Expanded metrics:
+- Workout count
+- Workout intensity
+- Weekly exercise total
+
+Graph:
+7-day exercise-minutes trend.
+
+AI insight:
+Clarifies that this card tracks structured exercise, separate from active minutes.
+
+Color:
+Orange, because exercise is energetic and workout-focused.
+
+Backend/database fields:
+- patient_daily_health_fact.exercise_minutes
+- patient_daily_health_fact.workout_count
+- patient_daily_health_fact.workout_intensity
+- patient_metric_preferences.exercise_goal_minutes
+
+
+6. Active Minutes
+-----------------
+Purpose:
+Tracks general active movement time, separate from structured workouts.
+
+Main value:
+Active minutes today.
+
+Progress circle:
+Shows percentage of the patient's daily active-minute goal.
+Formula: active minutes / active-minute goal * 100.
+The visible ring is capped at 100%.
+
+Goal/status text:
+Uses the patient's active-minute goal.
+Example: 45 min of 60 min.
+
+Trend label:
+Compares today's active minutes with the recent 7-day average.
+Examples: Above weekly average, Below weekly average, Stable this week.
+
+Expanded metrics:
+- 7-day average active minutes
+- Daily active-minute target
+
+Graph:
+7-day active-minutes trend.
+
+AI insight:
+Explains that active minutes include general movement and should stay separate from structured exercise.
+
+Color:
+Sky blue, because it represents general daily activity and movement.
+
+Backend/database fields:
+- patient_daily_health_fact.active_minutes
+- patient_metric_preferences.active_minute_goal
+
+
+7. Sedentary Time
+-----------------
+Purpose:
+Tracks time spent sedentary and treats it as a limit, not a goal to reach.
+
+Main value:
+Sedentary hours today.
+
+Progress/status circle:
+Uses reversed limit logic because lower sedentary time is better.
+The ring represents remaining allowance/status against the patient's sedentary limit.
+
+Status logic:
+- Within daily limit
+- Approaching limit
+- Above limit
+- Limit not set
+
+Goal/status text:
+Uses the patient's sedentary limit.
+Example: limit 8.0 hrs.
+
+Trend label:
+Uses sedentary limit status.
+Example: Within daily limit.
+
+Expanded metrics:
+- Longest inactive period
+- 7-day average sedentary hours
+
+Graph:
+7-day sedentary-hours trend.
+
+AI insight:
+Explains that sedentary time uses limit logic because lower is better.
+
+Color:
+Caution yellow-green, because sedentary time is a limit/warning-style metric.
+
+Backend/database fields:
+- patient_daily_health_fact.sedentary_hours
+- patient_daily_health_fact.longest_inactive_minutes
+- patient_metric_preferences.sedentary_limit_hours
+
+
+8. Calories Burned
+------------------
+Purpose:
+Shows active calories burned while using active calories for goal progress.
+
+Main value:
+Active calories burned.
+
+Progress circle:
+Uses active calories, not total calories.
+Formula: active calories / active-calorie goal * 100.
+The visible ring is capped at 100%.
+
+Goal/status text:
+Uses the patient's active-calorie goal.
+Example: 620 cals of 800 cals.
+
+Trend label:
+Compares active calories with the recent active-calorie average when available.
+Examples: Above weekly average, Below weekly average, Stable this week.
+
+Expanded metrics:
+- Total calories
+- 7-day active-calorie average
+
+Graph:
+7-day active-calorie trend.
+
+AI insight:
+Explains that active calories drive the progress ring, while total calories are shown as context.
+
+Color:
+Deep flame orange, because it represents energy burn/calories.
+
+Backend/database fields:
+- patient_daily_health_fact.calories_burned
+- patient_daily_health_fact.active_calories
+- patient_metric_preferences.active_calorie_goal
+
+
+9. Blood Pressure
+-----------------
+Purpose:
+Shows the latest blood pressure reading and gives a range/status indicator.
+
+Main value:
+Latest systolic/diastolic reading.
+Example: 130/82 mmHg.
+
+Progress/status circle:
+This is not goal completion.
+The circle represents blood pressure status against a defined prototype target range.
+
+Status logic:
+- Within target range
+- Slightly elevated
+- Elevated
+- Review recommended
+- Not enough data
+
+Goal/status text:
+Uses the patient's defined systolic and diastolic target maximums.
+Example: below 120/80.
+
+Trend label:
+Uses the blood pressure status.
+Example: Slightly elevated.
+
+Expanded metrics:
+- Systolic reading
+- Diastolic reading
+- Recent average
+- Last measured date
+
+Graph:
+Recent blood pressure trend based on available systolic/diastolic readings.
+
+AI insight:
+Explains that the prototype uses a defined range indicator and avoids diagnosing blood pressure conditions.
+
+Color:
+Violet, because it distinguishes clinical/range-based blood pressure status from movement and energy metrics.
+
+Backend/database fields:
+- patient_daily_health_fact.systolic_bp
+- patient_daily_health_fact.diastolic_bp
+- patient_daily_health_fact.record_date
+- patient_metric_preferences.bp_systolic_target_max
+- patient_metric_preferences.bp_diastolic_target_max
+
+
+Shared KPI Behavior
+===================
+
+All KPI cards:
+- Display one main value prominently.
+- Show supporting values in smaller text.
+- Use database values when available.
+- Show "Not enough data", "Target not set", "Limit not set", or "Baseline not established" when required data is missing.
+- Use a compact 7-day graph when historical data exists.
+- Can expand into a detailed KPI view.
+- Use reusable frontend utility logic in src/utils/patientKpis.js.
+- Use backend/database values returned by the patient dashboard and trends endpoints.
+
+Meaningful progress rings are used for:
+- Steps
+- Sleep
+- Recovery, using a composite recovery score
+- Exercise
+- Active Minutes
+- Calories Burned, using active calories
+
+Range or baseline status rings are used for:
+- Resting Heart Rate
+- Blood Pressure
+
+Reversed limit logic is used for:
+- Sedentary Time
+
+
+Related Files
+=============
+
+Frontend:
+- src/utils/patientKpis.js
+- src/components/patient/PatientToday.jsx
+- src/components/PatientView.jsx
+- src/styles.css
+
+Backend/database:
+- backend/src/routes/patient.js
+- backend/src/routes/ai.js
+- backend/src/seed/data/patients.js
+- backend/src/seed/data/users.js
+- backend/src/seed/data/healthData.js
+- backend/src/seed/kpiPlaceholderSchema.js
+- backend/scripts/applyKpiPlaceholderMigration.js

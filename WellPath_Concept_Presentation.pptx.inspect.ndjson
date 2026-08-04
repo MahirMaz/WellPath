@@ -1,0 +1,260 @@
+{"kind":"deck","id":"pr/xahna9","name":"Deck"}
+{"kind":"layout","layoutId":"68e4fc16-1d43-440a-869d-d7f58f313fb5","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"8f35b2dd-00b9-4d34-a74f-eea042cf3385","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/9c73qq","slide":1,"title":"WELLPATH","textShapes":6}
+{"kind":"shape","id":"sh/epon65wj","slide":1,"bbox":[0,0,1280,14]}
+{"kind":"textbox","id":"sh/1sf6hkva","slide":1,"text":"WELLPATH","textPreview":"WELLPATH","textChars":8,"textLines":1,"bbox":[72,66,360,28]}
+{"kind":"textbox","id":"sh/0r658fep","slide":1,"text":"Exploring what connected health data could become","textPreview":"Exploring what connected health data could become","textChars":49,"textLines":1,"bbox":[72,130,560,218]}
+{"kind":"textbox","id":"sh/nuhojudg","slide":1,"text":"A concept prototype combining health tracking, model experiments, cycle estimation, and AI explanations.","textPreview":"A concept prototype combining health tracking, model experiments, cycle estimation, and AI explanations.","textChars":104,"textLines":1,"bbox":[72,378,530,104]}
+{"kind":"textbox","id":"sh/2t87apwv","slide":1,"text":"CONCEPT PRESENTATION","textPreview":"CONCEPT PRESENTATION","textChars":20,"textLines":1,"bbox":[72,590,310,28]}
+{"kind":"shape","id":"sh/9wz6lkv6","slide":1,"bbox":[720,54,480,590]}
+{"kind":"textbox","id":"sh/byhonudc","slide":1,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/ax87epwr","slide":1,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/hgnq98fm","slide":1,"name":"","geometry":"roundRect","alt":"WellPath patient dashboard","bbox":[752,82,416,534]}
+{"kind":"notes","id":"nt/9c73qq","slide":1,"text":"Introduce WellPath as an academic exploration, not a finished medical product. The central question is how a future health application might connect different forms of health information while keeping explanations understandable.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\patient-dashboard.png"}
+{"kind":"slide","id":"sl/aowbev","slide":2,"title":"Health data is collected in pieces","textShapes":11}
+{"kind":"textbox","id":"sh/sbq90ryx","slide":2,"name":"slide-title","text":"Health data is collected in pieces","textPreview":"Health data is collected in pieces","textChars":34,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/rah87mhc","slide":2,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/6p8ryhgr","slide":2,"text":"The harder problem is understanding how those pieces relate.","textPreview":"The harder problem is understanding how those pieces relate.","textChars":60,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"textbox","id":"sh/1gjadwze","slide":2,"text":"Sleep","textPreview":"Sleep","textChars":5,"textLines":1,"bbox":[92,215,190,54]}
+{"kind":"textbox","id":"sh/0fa94ryt","slide":2,"text":"Activity","textPreview":"Activity","textChars":8,"textLines":1,"bbox":[330,280,210,54]}
+{"kind":"textbox","id":"sh/fe18bmh8","slide":2,"text":"Symptoms","textPreview":"Symptoms","textChars":8,"textLines":1,"bbox":[96,390,240,54]}
+{"kind":"textbox","id":"sh/edsr2hgn","slide":2,"text":"Cycle history","textPreview":"Cycle history","textChars":13,"textLines":1,"bbox":[380,490,270,54]}
+{"kind":"textbox","id":"sh/pk3ahgza","slide":2,"text":"Clinical measures","textPreview":"Clinical measures","textChars":17,"textLines":1,"bbox":[738,238,330,54]}
+{"kind":"textbox","id":"sh/oja98byp","slide":2,"text":"Risk factors","textPreview":"Risk factors","textChars":12,"textLines":1,"bbox":[866,410,250,54]}
+{"kind":"shape","id":"sh/210vyt83","slide":2,"bbox":[618,188,5,400]}
+{"kind":"textbox","id":"sh/n29c7y9o","slide":2,"text":"Most tools show what changed.\nWellPath explores how an interface might also explain context, relationships, and uncertainty.","textPreview":"Most tools show what changed. | WellPath explores how an interface might also explain context, relationships, and uncertainty.","textChars":124,"textLines":2,"bbox":[676,500,470,110]}
+{"kind":"textbox","id":"sh/o3id03qt","slide":2,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/p4ru98re","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"notes","id":"nt/aowbev","slide":2,"text":"Frame the problem as interpretation rather than a lack of data. People may see activity, sleep, symptoms, cycle history, and clinical measures in separate places. The prototype asks how a single experience could help users explore connections without claiming to diagnose them."}
+{"kind":"slide","id":"sl/2ttuic","slide":3,"title":"WellPath is a question, not a finished product","textShapes":7}
+{"kind":"textbox","id":"sh/xw3y9sv2","slide":3,"name":"slide-title","text":"WellPath is a question, not a finished product","textPreview":"WellPath is a question, not a finished product","textChars":46,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/atcfexcr","slide":3,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/bulw72dc","slide":3,"text":"What could a more connected and explainable health experience look like?","textPreview":"What could a more connected and explainable health experience look like?","textChars":72,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/o7axcnul","slide":3,"bbox":[64,156,641,456]}
+{"kind":"textbox","id":"sh/25sfadcf","slide":3,"text":"The concept brings together","textPreview":"The concept brings together","textChars":27,"textLines":1,"bbox":[754,174,440,36]}
+{"kind":"textbox","id":"sh/n61w3id0","slide":3,"text":"Daily tracking and personal trends\nExploratory models and transparent factors\nCycle estimates based on logged history\nAI explanations in plain language","textPreview":"Daily tracking and personal trends | Exploratory models and transparent factors | Cycle estimates based on logged history | AI explanatio...","textChars":151,"textLines":4,"bbox":[754,232,430,250]}
+{"kind":"textbox","id":"sh/83exoru5","slide":3,"text":"The app demonstrates the experience using fictional sample profiles.","textPreview":"The app demonstrates the experience using fictional sample profiles.","textChars":68,"textLines":1,"bbox":[754,510,420,64]}
+{"kind":"textbox","id":"sh/9onyhwba","slide":3,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/5o7u1w7m","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/ofypknyx","slide":3,"name":"","geometry":"roundRect","alt":"WellPath clinical view","bbox":[72,164,625,440]}
+{"kind":"notes","id":"nt/2ttuic","slide":3,"text":"The purpose is to explore several concepts in one interface: daily tracking, experimental health models, cycle estimation, and AI explanations. Emphasize that the application screens use fictional sample profiles and are not evidence of clinical performance.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\clinical-view.png\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\README.md"}
+{"kind":"slide","id":"sl/d123iv","slide":4,"title":"The concept moves beyond single purpose tracking","textShapes":10}
+{"kind":"textbox","id":"sh/v6dgvi1s","slide":4,"name":"slide-title","text":"The concept moves beyond single purpose tracking","textPreview":"The concept moves beyond single purpose tracking","textChars":48,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/w7mxonid","slide":4,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/h8vyxsji","slide":4,"text":"Existing categories become a design starting point, not a market claim.","textPreview":"Existing categories become a design starting point, not a market claim.","textChars":71,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/mhkfid0v","slide":4,"bbox":[72,164,520,430]}
+{"kind":"textbox","id":"sh/7itgri1g","slide":4,"text":"COMMON APP FOCUS","textPreview":"COMMON APP FOCUS","textChars":16,"textLines":1,"bbox":[110,204,360,24]}
+{"kind":"textbox","id":"sh/8j2xk3i1","slide":4,"text":"Track one category","textPreview":"Track one category","textChars":18,"textLines":1,"bbox":[110,258,400,46]}
+{"kind":"textbox","id":"sh/9kbyt8jm","slide":4,"text":"Fitness\nCycles\nSleep\nSymptoms\nRecords","textPreview":"Fitness | Cycles | Sleep | Symptoms | Records","textChars":37,"textLines":5,"bbox":[110,335,380,210]}
+{"kind":"shape","id":"sh/yd0fet0z","slide":4,"bbox":[622,164,586,430]}
+{"kind":"textbox","id":"sh/zetgny1k","slide":4,"text":"WELLPATH EXPLORES","textPreview":"WELLPATH EXPLORES","textChars":17,"textLines":1,"bbox":[660,204,420,24]}
+{"kind":"textbox","id":"sh/v698fy50","slide":4,"text":"Connect the context","textPreview":"Connect the context","textChars":19,"textLines":1,"bbox":[660,258,450,46]}
+{"kind":"textbox","id":"sh/u5076tof","slide":4,"text":"How factors relate\nWhy a result changed\nWhere uncertainty remains\nHow results can be explained","textPreview":"How factors relate | Why a result changed | Where uncertainty remains | How results can be explained","textChars":94,"textLines":4,"bbox":[660,335,470,210]}
+{"kind":"textbox","id":"sh/h8rqh8n6","slide":4,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/g7ip836l","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"notes","id":"nt/d123iv","slide":4,"text":"Do not position this as a competitive product comparison. The slide recognizes common categories in health apps and uses them to define the design exploration. WellPath asks what happens when those categories share context and explanations."}
+{"kind":"slide","id":"sl/p66r1y","slide":5,"title":"Four experiences anchor the prototype","textShapes":16}
+{"kind":"textbox","id":"sh/q90fed83","slide":5,"name":"slide-title","text":"Four experiences anchor the prototype","textPreview":"Four experiences anchor the prototype","textChars":37,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/dcryp8ru","slide":5,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/cbixg3q9","slide":5,"text":"Each one tests a different way of making health information easier to explore.","textPreview":"Each one tests a different way of making health information easier to explore.","textChars":78,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/zytgri9k","slide":5,"bbox":[64,150,586,471]}
+{"kind":"textbox","id":"sh/l0bytsrq","slide":5,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[705,162,48,28]}
+{"kind":"textbox","id":"sh/0z2xknq5","slide":5,"text":"Daily context","textPreview":"Daily context","textChars":13,"textLines":1,"bbox":[770,160,390,30]}
+{"kind":"textbox","id":"sh/n2tgv29w","slide":5,"text":"Metrics, goals, and recent changes","textPreview":"Metrics, goals, and recent changes","textChars":34,"textLines":1,"bbox":[770,196,390,34]}
+{"kind":"shape","id":"sh/m1kfmx8b","slide":5,"bbox":[705,244,455,1]}
+{"kind":"textbox","id":"sh/sn290vm9","slide":5,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[705,270,48,28]}
+{"kind":"textbox","id":"sh/tobat0nu","slide":5,"text":"Cycle estimation","textPreview":"Cycle estimation","textChars":16,"textLines":1,"bbox":[770,268,390,30]}
+{"kind":"textbox","id":"sh/6l0ryl4j","slide":5,"text":"History, range, and confidence","textPreview":"History, range, and confidence","textChars":30,"textLines":1,"bbox":[770,304,390,34]}
+{"kind":"shape","id":"sh/rmtsrq5o","slide":5,"bbox":[705,352,455,1]}
+{"kind":"textbox","id":"sh/gb294fml","slide":5,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[705,378,48,28]}
+{"kind":"textbox","id":"sh/1cbaxkn6","slide":5,"text":"Model transparency","textPreview":"Model transparency","textChars":18,"textLines":1,"bbox":[770,376,390,30]}
+{"kind":"textbox","id":"sh/e9kr254f","slide":5,"text":"Scores, factors, and performance","textPreview":"Scores, factors, and performance","textChars":32,"textLines":1,"bbox":[770,412,390,34]}
+{"kind":"shape","id":"sh/fatsva50","slide":5,"bbox":[705,460,455,1]}
+{"kind":"textbox","id":"sh/ofmt8fmh","slide":5,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[705,486,48,28]}
+{"kind":"textbox","id":"sh/pgva1kn2","slide":5,"text":"AI explanation","textPreview":"AI explanation","textChars":14,"textLines":1,"bbox":[770,484,390,30]}
+{"kind":"textbox","id":"sh/xwralkf6","slide":5,"text":"Short guidance tied to a result","textPreview":"Short guidance tied to a result","textChars":31,"textLines":1,"bbox":[770,520,390,34]}
+{"kind":"shape","id":"sh/cvi9sfel","slide":5,"bbox":[705,568,455,1]}
+{"kind":"textbox","id":"sh/bu9sjax0","slide":5,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/at0rq5wv","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/fuh4fmh8","slide":5,"name":"","geometry":"roundRect","alt":"WellPath dashboard","bbox":[72,158,570,455]}
+{"kind":"notes","id":"nt/p66r1y","slide":5,"text":"Use this as a brief map of the prototype before moving into the experiments. The dashboard explores daily context, the period tracker explores estimation and confidence, the insight page explores model transparency, and Groq AI explores short explanations.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\patient-dashboard.png"}
+{"kind":"slide","id":"sl/x91inw","slide":6,"title":"Evidence and demonstration stay separate","textShapes":21}
+{"kind":"textbox","id":"sh/0belgb61","slide":6,"name":"slide-title","text":"Evidence and demonstration stay separate","textPreview":"Evidence and demonstration stay separate","textChars":40,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/za54765g","slide":6,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/y9w3elov","slide":6,"text":"Public data tests the models. Sample profiles demonstrate the interface.","textPreview":"Public data tests the models. Sample profiles demonstrate the interface.","textChars":72,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/d8nm5gna","slide":6,"bbox":[237,310,63,0]}
+{"kind":"shape","id":"sh/c7elcb65","slide":6,"bbox":[465,310,63,0]}
+{"kind":"shape","id":"sh/b654365k","slide":6,"bbox":[693,310,63,0]}
+{"kind":"shape","id":"sh/qlc3a1oz","slide":6,"bbox":[921,310,63,0]}
+{"kind":"shape","id":"sh/x4rmh0nu","slide":6,"bbox":[72,250,165,150]}
+{"kind":"textbox","id":"sh/w3y5ov69","slide":6,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[90,266,40,22]}
+{"kind":"textbox","id":"sh/u1w365s7","slide":6,"text":"CDC and NHANES","textPreview":"CDC and NHANES","textChars":14,"textLines":1,"bbox":[90,298,130,46]}
+{"kind":"textbox","id":"sh/v254fa9s","slide":6,"text":"Public health records","textPreview":"Public health records","textChars":21,"textLines":1,"bbox":[90,354,130,28]}
+{"kind":"shape","id":"sh/w3y58fad","slide":6,"bbox":[300,250,165,150]}
+{"kind":"textbox","id":"sh/h47mhkry","slide":6,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[318,266,40,22]}
+{"kind":"textbox","id":"sh/mxw32lsb","slide":6,"text":"Model experiments","textPreview":"Model experiments","textChars":17,"textLines":1,"bbox":[318,298,130,46]}
+{"kind":"textbox","id":"sh/7y54bqtg","slide":6,"text":"Train and compare","textPreview":"Train and compare","textChars":17,"textLines":1,"bbox":[318,354,130,28]}
+{"kind":"shape","id":"sh/8zel4va1","slide":6,"bbox":[528,250,165,150]}
+{"kind":"textbox","id":"sh/90nmd0bm","slide":6,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[546,266,40,22]}
+{"kind":"textbox","id":"sh/6tgnepsf","slide":6,"text":"Held out testing","textPreview":"Held out testing","textChars":16,"textLines":1,"bbox":[546,298,130,46]}
+{"kind":"textbox","id":"sh/rup4nu90","slide":6,"text":"Evaluate performance","textPreview":"Evaluate performance","textChars":20,"textLines":1,"bbox":[546,354,130,28]}
+{"kind":"shape","id":"sh/ne1kzm9c","slide":6,"bbox":[756,250,165,150]}
+{"kind":"textbox","id":"sh/2dsj6h8r","slide":6,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[774,266,40,22]}
+{"kind":"textbox","id":"sh/pgj21wri","slide":6,"text":"Sample profiles","textPreview":"Sample profiles","textChars":15,"textLines":1,"bbox":[774,298,130,46]}
+{"kind":"textbox","id":"sh/ofa18rqx","slide":6,"text":"Fictional app data","textPreview":"Fictional app data","textChars":18,"textLines":1,"bbox":[774,354,130,28]}
+{"kind":"shape","id":"sh/b21k3mp8","slide":6,"bbox":[984,250,165,150]}
+{"kind":"textbox","id":"sh/ahsja183","slide":6,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1002,266,40,22]}
+{"kind":"textbox","id":"sh/x4325w7e","slide":6,"text":"WellPath UI","textPreview":"WellPath UI","textChars":11,"textLines":1,"bbox":[1002,298,130,46]}
+{"kind":"textbox","id":"sh/c3a1crqt","slide":6,"text":"Demonstrate the concept","textPreview":"Demonstrate the concept","textChars":23,"textLines":1,"bbox":[1002,354,130,28]}
+{"kind":"textbox","id":"sh/z6lk76pk","slide":6,"text":"The research project does not connect directly to the frontend, backend, database, or synthetic app users.","textPreview":"The research project does not connect directly to the frontend, backend, database, or synthetic app users.","textChars":106,"textLines":1,"bbox":[180,474,920,60]}
+{"kind":"textbox","id":"sh/y5cje18z","slide":6,"text":"This separation keeps model evidence from being confused with a product demonstration.","textPreview":"This separation keeps model evidence from being confused with a product demonstration.","textChars":86,"textLines":1,"bbox":[250,552,780,36]}
+{"kind":"textbox","id":"sh/wbe14b6d","slide":6,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/hcnixgni","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"notes","id":"nt/x91inw","slide":6,"text":"Explain the two stages clearly. Deidentified NHANES data and other CDC public health sources supported model development and testing. The standalone model project used participant level splits and held out evaluation. Once the team saw that the models could produce meaningful experimental results, fictional sample profiles were used to demonstrate how compatible fields and outputs might appear inside WellPath. The research project does not connect to the application or its database.\n\n[Sources]\n- https://www.cdc.gov/nchs/nhanes/\n- https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\README.md\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\data\\README.md"}
+{"kind":"slide","id":"sl/zq7xmw","slide":7,"title":"Cycle prediction adapts to the logged history","textShapes":11}
+{"kind":"textbox","id":"sh/o3250fmp","slide":7,"name":"slide-title","text":"Cycle prediction adapts to the logged history","textPreview":"Cycle prediction adapts to the logged history","textChars":45,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/32t47a54","slide":7,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/21kny54j","slide":7,"text":"The interface makes the estimate and its uncertainty visible.","textPreview":"The interface makes the estimate and its uncertainty visible.","textChars":61,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/d8vmdkn6","slide":7,"bbox":[64,147,696,486]}
+{"kind":"textbox","id":"sh/b6d4ba5g","slide":7,"text":"LOG","textPreview":"LOG","textChars":3,"textLines":1,"bbox":[810,188,80,24]}
+{"kind":"textbox","id":"sh/q5kn254v","slide":7,"text":"Cycle start dates","textPreview":"Cycle start dates","textChars":17,"textLines":1,"bbox":[810,218,330,36]}
+{"kind":"shape","id":"sh/tcrm1gn2","slide":7,"bbox":[810,279,330,1]}
+{"kind":"textbox","id":"sh/sbil8vmh","slide":7,"text":"ESTIMATE","textPreview":"ESTIMATE","textChars":8,"textLines":1,"bbox":[810,314,100,24]}
+{"kind":"textbox","id":"sh/u58fmlkn","slide":7,"text":"Average recent lengths","textPreview":"Average recent lengths","textChars":22,"textLines":1,"bbox":[810,344,350,36]}
+{"kind":"shape","id":"sh/f6hwv61s","slide":7,"bbox":[810,405,330,1]}
+{"kind":"textbox","id":"sh/g7qxob2d","slide":7,"text":"COMMUNICATE","textPreview":"COMMUNICATE","textChars":11,"textLines":1,"bbox":[810,440,130,24]}
+{"kind":"textbox","id":"sh/h8zexgjy","slide":7,"text":"Next start and confidence range","textPreview":"Next start and confidence range","textChars":31,"textLines":1,"bbox":[810,470,350,74]}
+{"kind":"textbox","id":"sh/298fqlkj","slide":7,"text":"More consistent history supports a narrower range.","textPreview":"More consistent history supports a narrower range.","textChars":50,"textLines":1,"bbox":[810,565,340,48]}
+{"kind":"textbox","id":"sh/3ahwzq14","slide":7,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/4bqxsv2p","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/l07m58rm","slide":7,"name":"","geometry":"roundRect","alt":"WellPath cycle tracker","bbox":[72,155,680,470]}
+{"kind":"notes","id":"nt/zq7xmw","slide":7,"text":"The cycle tracker demonstrates a transparent estimation concept. Logged cycle start dates produce cycle lengths. Recent lengths are averaged to estimate the next cycle start, and variability in the history informs the confidence range. The example screen uses sample history and should not be presented as a validated prediction tool.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\cycle-tracker.png"}
+{"kind":"slide","id":"sl/1f4w0q","slide":8,"title":"Sample values drive a realistic health experience","textShapes":11}
+{"kind":"textbox","id":"sh/pgbi1wb2","slide":8,"name":"slide-title","text":"Sample values drive a realistic health experience","textPreview":"Sample values drive a realistic health experience","textChars":49,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/2d0zq1cr","slide":8,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/net0z6tc","slide":8,"text":"The prototype shows how scores, goals, and guidance could respond together.","textPreview":"The prototype shows how scores, goals, and guidance could respond together.","textChars":75,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/c32hwbut","slide":8,"bbox":[62,146,476,490]}
+{"kind":"shape","id":"sh/ahkzu1cn","slide":8,"bbox":[590,174,520,100]}
+{"kind":"shape","id":"sh/bit036t8","slide":8,"bbox":[590,174,7,100]}
+{"kind":"textbox","id":"sh/snihk7up","slide":8,"text":"INPUTS","textPreview":"INPUTS","textChars":6,"textLines":1,"bbox":[614,192,472,20]}
+{"kind":"textbox","id":"sh/d8rytcbu","slide":8,"text":"Fictional measurements","textPreview":"Fictional measurements","textChars":22,"textLines":1,"bbox":[614,217,472,42]}
+{"kind":"shape","id":"sh/9836147u","slide":8,"bbox":[650,303,520,100]}
+{"kind":"shape","id":"sh/o7u58z69","slide":8,"bbox":[650,303,7,100]}
+{"kind":"textbox","id":"sh/n6lozupo","slide":8,"text":"CALCULATION","textPreview":"CALCULATION","textChars":11,"textLines":1,"bbox":[674,321,472,20]}
+{"kind":"textbox","id":"sh/m5sn6po3","slide":8,"text":"Goals, ranges, and recent trends","textPreview":"Goals, ranges, and recent trends","textChars":32,"textLines":1,"bbox":[674,346,472,42]}
+{"kind":"shape","id":"sh/xw3654nq","slide":8,"bbox":[590,432,520,100]}
+{"kind":"shape","id":"sh/wvu5cj65","slide":8,"bbox":[590,432,7,100]}
+{"kind":"textbox","id":"sh/balo3e5k","slide":8,"text":"EXPERIENCE","textPreview":"EXPERIENCE","textChars":10,"textLines":1,"bbox":[614,450,472,20]}
+{"kind":"textbox","id":"sh/a9cna9of","slide":8,"text":"Scores with short guidance","textPreview":"Scores with short guidance","textChars":26,"textLines":1,"bbox":[614,475,472,42]}
+{"kind":"textbox","id":"sh/l0n69on2","slide":8,"text":"The interface is the experiment here, not the sample user’s health result.","textPreview":"The interface is the experiment here, not the sample user’s health result.","textChars":74,"textLines":1,"bbox":[610,565,540,46]}
+{"kind":"textbox","id":"sh/kzepgj6h","slide":8,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/4f6hsrip","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/c7epw3ax","slide":8,"name":"","geometry":"roundRect","alt":"WellPath KPI insights screen","bbox":[70,154,460,474]}
+{"kind":"notes","id":"nt/1f4w0q","slide":8,"text":"The app uses fictional measurements to make the prototype feel complete. The interface compares those values with configured goals, ranges, and recent trends, then displays score cards and guidance. These sample results demonstrate interaction and communication design, not real health conclusions.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\kpi-insights.png\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\README.md"}
+{"kind":"slide","id":"sl/8szsun","slide":9,"title":"Held out testing checks whether the models learned a signal","textShapes":9}
+{"kind":"textbox","id":"sh/do7ypszq","slide":9,"name":"slide-title","text":"Held out testing checks whether the models learned a signal","textPreview":"Held out testing checks whether the models learned a signal","textChars":59,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/qlgfex0f","slide":9,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/rmpgn21k","slide":9,"text":"The experiment compares several approaches before any app demonstration.","textPreview":"The experiment compares several approaches before any app demonstration.","textChars":72,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/0byxk7ih","slide":9,"bbox":[70,150,770,490]}
+{"kind":"textbox","id":"sh/epgfix0b","slide":9,"text":"WHAT WAS TESTED","textPreview":"WHAT WAS TESTED","textChars":15,"textLines":1,"bbox":[900,170,250,24]}
+{"kind":"textbox","id":"sh/zapgr2hw","slide":9,"text":"Participant level splits","textPreview":"Participant level splits","textChars":24,"textLines":1,"bbox":[900,214,300,58]}
+{"kind":"textbox","id":"sh/8fihorid","slide":9,"text":"Model comparisons","textPreview":"Model comparisons","textChars":17,"textLines":1,"bbox":[900,302,300,44]}
+{"kind":"textbox","id":"sh/9gryxwzy","slide":9,"text":"Held out performance","textPreview":"Held out performance","textChars":20,"textLines":1,"bbox":[900,390,300,44]}
+{"kind":"shape","id":"sh/xcjyx4be","slide":9,"bbox":[900,471,280,1]}
+{"kind":"textbox","id":"sh/cbaxojut","slide":9,"text":"Classification performance does not establish diagnosis, safety, or clinical usefulness.","textPreview":"Classification performance does not establish diagnosis, safety, or clinical usefulness.","textChars":88,"textLines":1,"bbox":[900,500,280,102]}
+{"kind":"textbox","id":"sh/bq1gvet8","slide":9,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/apsfm9cn","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/gfuxo7mx","slide":9,"name":"","geometry":"roundRect","alt":"Held out test ROC curves","bbox":[86,166,738,458]}
+{"kind":"notes","id":"nt/8szsun","slide":9,"text":"The standalone research project compares multiple model types with participant level data splits. The methodology includes training, validation, and held out testing for the multi condition panel, with preprocessing contained inside the model pipeline. ROC curves summarize how well models separate predefined categories in the research dataset. Good separation in one dataset does not prove diagnosis, clinical safety, transportability, fairness, or benefit.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\outputs\\charts\\roc_curves.png\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\README.md\n- https://www.cdc.gov/nchs/nhanes/"}
+{"kind":"slide","id":"sl/t02v8o","slide":10,"title":"Model outputs become readable, not clinical","textShapes":7}
+{"kind":"textbox","id":"sh/dwza10vq","slide":10,"name":"slide-title","text":"Model outputs become readable, not clinical","textPreview":"Model outputs become readable, not clinical","textChars":43,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/qtobqlwf","slide":10,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/ruhszqdk","slide":10,"text":"The interface separates overall model separation from associated factors.","textPreview":"The interface separates overall model separation from associated factors.","textChars":73,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/4r6tobe9","slide":10,"bbox":[70,160,550,420]}
+{"kind":"textbox","id":"sh/2pobm1w3","slide":10,"text":"MODEL SEPARATION","textPreview":"MODEL SEPARATION","textChars":16,"textLines":1,"bbox":[98,177,240,22]}
+{"kind":"shape","id":"sh/3qxsv6do","slide":10,"bbox":[660,160,550,420]}
+{"kind":"textbox","id":"sh/9oju9kvy","slide":10,"text":"ASSOCIATED FACTORS","textPreview":"ASSOCIATED FACTORS","textChars":18,"textLines":1,"bbox":[690,177,250,22]}
+{"kind":"textbox","id":"sh/hg7u50ri","slide":10,"text":"Association ≠ causation     Classification ≠ diagnosis","textPreview":"Association ≠ causation     Classification ≠ diagnosis","textChars":54,"textLines":1,"bbox":[260,610,760,34]}
+{"kind":"textbox","id":"sh/gfytwvax","slide":10,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/fepc3q9c","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/ofad832p","slide":10,"name":"","geometry":"roundRect","alt":"Model separation card","bbox":[98,208,494,300]}
+{"kind":"image","id":"im/xk3ul8j6","slide":10,"name":"","geometry":"roundRect","alt":"Associated model factors","bbox":[690,214,490,305]}
+{"kind":"notes","id":"nt/t02v8o","slide":10,"text":"The prototype experiments with two kinds of transparency. One view communicates model separation, while the other shows variables associated with the output. The factors should be described as model factors, contributing variables, or associations. They should not automatically be called independent risk factors or causes.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\model-card-separation.png\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\model-risk-drivers.png\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\README.md"}
+{"kind":"slide","id":"sl/f4qvie","slide":11,"title":"AI explains the result; it does not create it","textShapes":11}
+{"kind":"textbox","id":"sh/zadkfyp8","slide":11,"name":"slide-title","text":"AI explains the result; it does not create it","textPreview":"AI explains the result; it does not create it","textChars":45,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/0bmlo3qt","slide":11,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/lcf2h87e","slide":11,"text":"Groq turns calculated outputs and sample context into a short interpretation.","textPreview":"Groq turns calculated outputs and sample context into a short interpretation.","textChars":77,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/q54jit8r","slide":11,"bbox":[64,154,556,434]}
+{"kind":"shape","id":"sh/c7m1kjqh","slide":11,"bbox":[686,186,70,70]}
+{"kind":"textbox","id":"sh/d8v2do72","slide":11,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[686,201,70,40]}
+{"kind":"textbox","id":"sh/a1o3ud8v","slide":11,"text":"Calculated result","textPreview":"Calculated result","textChars":17,"textLines":1,"bbox":[788,201,350,44]}
+{"kind":"shape","id":"sh/v2xknipg","slide":11,"bbox":[686,302,70,70]}
+{"kind":"textbox","id":"sh/fi1wrilg","slide":11,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[686,317,70,40]}
+{"kind":"textbox","id":"sh/eh8fid4v","slide":11,"text":"Relevant context","textPreview":"Relevant context","textChars":16,"textLines":1,"bbox":[788,317,350,44]}
+{"kind":"shape","id":"sh/1kjyt836","slide":11,"bbox":[686,418,70,70]}
+{"kind":"textbox","id":"sh/0jaxk32l","slide":11,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[686,433,70,40]}
+{"kind":"textbox","id":"sh/nm1gvilc","slide":11,"text":"Plain language insight","textPreview":"Plain language insight","textChars":22,"textLines":1,"bbox":[788,433,350,44]}
+{"kind":"textbox","id":"sh/2lsfmdkr","slide":11,"text":"The explanation layer can still be incomplete or wrong, so it remains part of the experiment.","textPreview":"The explanation layer can still be incomplete or wrong, so it remains part of the experiment.","textChars":93,"textLines":1,"bbox":[686,548,470,62]}
+{"kind":"textbox","id":"sh/pojyxs3i","slide":11,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/onaxon2x","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/698rud83","slide":11,"name":"","geometry":"roundRect","alt":"Short AI insight beneath a KPI","bbox":[92,185,500,368]}
+{"kind":"notes","id":"nt/f4qvie","slide":11,"text":"Groq AI receives calculated scores and relevant sample context, then generates a short explanation. The statistical result is produced before the AI step. The AI layer is being explored as a communication tool, and its explanations may simplify, omit, or misinterpret technical information.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\kpi-ai-insight.png"}
+{"kind":"slide","id":"sl/c8pd0d","slide":12,"title":"The prototype walkthrough follows one sample user","textShapes":14}
+{"kind":"shape","id":"sh/fuhcr2tg","slide":12,"bbox":[0,0,1280,14]}
+{"kind":"textbox","id":"sh/0vatk7a1","slide":12,"text":"The prototype walkthrough follows one sample user","textPreview":"The prototype walkthrough follows one sample user","textChars":49,"textLines":1,"bbox":[72,54,1050,65]}
+{"kind":"textbox","id":"sh/1wjutsbm","slide":12,"text":"One flow connects the concepts without implying a live clinical system.","textPreview":"One flow connects the concepts without implying a live clinical system.","textChars":71,"textLines":1,"bbox":[72,126,850,32]}
+{"kind":"shape","id":"sh/qp8bedsz","slide":12,"bbox":[72,188,620,430]}
+{"kind":"textbox","id":"sh/srqtgnap","slide":12,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[760,202,52,28]}
+{"kind":"textbox","id":"sh/dszupsba","slide":12,"text":"Open the dashboard","textPreview":"Open the dashboard","textChars":18,"textLines":1,"bbox":[830,199,360,40]}
+{"kind":"shape","id":"sh/i1obadcn","slide":12,"bbox":[760,258,410,1]}
+{"kind":"textbox","id":"sh/3mxsjit8","slide":12,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[760,280,52,28]}
+{"kind":"textbox","id":"sh/je9of6d4","slide":12,"text":"Log a sample entry","textPreview":"Log a sample entry","textChars":18,"textLines":1,"bbox":[830,277,360,40]}
+{"kind":"shape","id":"sh/yd0761wj","slide":12,"bbox":[760,336,410,1]}
+{"kind":"textbox","id":"sh/lgrqhwvu","slide":12,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[760,358,52,28]}
+{"kind":"textbox","id":"sh/kfip8ru9","slide":12,"text":"Review scores","textPreview":"Review scores","textChars":13,"textLines":1,"bbox":[830,355,360,40]}
+{"kind":"shape","id":"sh/7it8j6d0","slide":12,"bbox":[760,414,410,1]}
+{"kind":"textbox","id":"sh/6hk7a1cf","slide":12,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[760,436,52,28]}
+{"kind":"textbox","id":"sh/t4bqlgv6","slide":12,"text":"Explore cycle estimate","textPreview":"Explore cycle estimate","textChars":22,"textLines":1,"bbox":[830,433,360,40]}
+{"kind":"shape","id":"sh/8j2pcbul","slide":12,"bbox":[760,492,410,1]}
+{"kind":"textbox","id":"sh/nmpo7mdw","slide":12,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[760,514,52,28]}
+{"kind":"textbox","id":"sh/2lg7yhwb","slide":12,"text":"Inspect model and AI insight","textPreview":"Inspect model and AI insight","textChars":28,"textLines":1,"bbox":[830,511,360,40]}
+{"kind":"textbox","id":"sh/q1ormpwz","slide":12,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/r2xsfax4","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"image","id":"im/6pczat4r","slide":12,"name":"","geometry":"roundRect","alt":"WellPath insights overview","bbox":[96,208,572,390]}
+{"kind":"notes","id":"nt/c8pd0d","slide":12,"text":"Use this slide to begin the live demonstration. Open the sample user dashboard, log or review a daily entry, show how the metrics respond, open the cycle tracker, then move to model statistics, associated factors, and the short AI insight. Keep reminding the audience that the profile is fictional and the experience is conceptual.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\poster_assets\\insights-overview.png"}
+{"kind":"slide","id":"sl/3g5427","slide":13,"title":"The prototype has clear boundaries","textShapes":14}
+{"kind":"textbox","id":"sh/qhwzmlsn","slide":13,"name":"slide-title","text":"The prototype has clear boundaries","textPreview":"The prototype has clear boundaries","textChars":34,"textLines":1,"bbox":[72,42,1136,62]}
+{"kind":"shape","id":"sh/dknyh0be","slide":13,"bbox":[72,137,58,5]}
+{"kind":"textbox","id":"sh/cjehovat","slide":13,"text":"Those boundaries are part of the learning, not fine print.","textPreview":"Those boundaries are part of the learning, not fine print.","textChars":58,"textLines":1,"bbox":[150,124,1000,28]}
+{"kind":"shape","id":"sh/3elgb6tc","slide":13,"bbox":[72,182,328,320]}
+{"kind":"textbox","id":"sh/2dczilcr","slide":13,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[100,212,48,25]}
+{"kind":"textbox","id":"sh/pg3ydgb2","slide":13,"text":"SAMPLE PROFILES","textPreview":"SAMPLE PROFILES","textChars":15,"textLines":1,"bbox":[100,260,270,58]}
+{"kind":"textbox","id":"sh/4fuhkbuh","slide":13,"text":"The application uses fictional data to demonstrate interactions.","textPreview":"The application uses fictional data to demonstrate interactions.","textChars":64,"textLines":1,"bbox":[100,352,270,115]}
+{"kind":"shape","id":"sh/nap0natg","slide":13,"bbox":[444,182,328,320]}
+{"kind":"textbox","id":"sh/m9gze5sv","slide":13,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[472,212,48,25]}
+{"kind":"textbox","id":"sh/87yxovyd","slide":13,"text":"EXPLORATORY MODELS","textPreview":"EXPLORATORY MODELS","textChars":18,"textLines":1,"bbox":[472,260,270,58]}
+{"kind":"textbox","id":"sh/987yhgfy","slide":13,"text":"Research results describe classification and association, not causation.","textPreview":"Research results describe classification and association, not causation.","textChars":72,"textLines":1,"bbox":[472,352,270,115]}
+{"kind":"shape","id":"sh/m5wfmlg7","slide":13,"bbox":[816,182,328,320]}
+{"kind":"textbox","id":"sh/n6pgfqxs","slide":13,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[844,212,48,25]}
+{"kind":"textbox","id":"sh/0jexkby1","slide":13,"text":"NO CLINICAL VALIDATION","textPreview":"NO CLINICAL VALIDATION","textChars":22,"textLines":1,"bbox":[844,260,270,58]}
+{"kind":"textbox","id":"sh/l4nydgfm","slide":13,"text":"The project cannot support diagnosis or medical decisions.","textPreview":"The project cannot support diagnosis or medical decisions.","textChars":58,"textLines":1,"bbox":[844,352,270,115]}
+{"kind":"textbox","id":"sh/yhwfi1gb","slide":13,"text":"A real health product would require clinical review, privacy and security work, usability testing, fairness evaluation, and regulatory analysis.","textPreview":"A real health product would require clinical review, privacy and security work, usability testing, fairness evaluation, and regulatory an...","textChars":144,"textLines":1,"bbox":[158,550,964,64]}
+{"kind":"textbox","id":"sh/zi5gb6xw","slide":13,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/cfexgby5","slide":13,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"notes","id":"nt/3g5427","slide":13,"text":"State the boundaries directly. Sample profiles are fictional. The models are exploratory research models and are not clinically validated. Associations do not establish causes, and classification does not establish a diagnosis. A real product would require external and prospective validation, clinical utility studies, privacy and security safeguards, subgroup fairness evaluation, deployment monitoring, and relevant regulatory review.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\README.md\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-data-research\\README.md"}
+{"kind":"slide","id":"sl/dtgm8v","slide":14,"title":"WELLPATH","textShapes":12}
+{"kind":"shape","id":"sh/ovylcnmd","slide":14,"bbox":[0,0,1280,14]}
+{"kind":"textbox","id":"sh/napk3i5s","slide":14,"text":"WELLPATH","textPreview":"WELLPATH","textChars":8,"textLines":1,"bbox":[72,58,300,24]}
+{"kind":"textbox","id":"sh/m9g3ad47","slide":14,"text":"A health app could help people explore, not just track.","textPreview":"A health app could help people explore, not just track.","textChars":55,"textLines":1,"bbox":[72,124,1030,125]}
+{"kind":"textbox","id":"sh/18n218nm","slide":14,"text":"The prototype demonstrates three connected ideas","textPreview":"The prototype demonstrates three connected ideas","textChars":48,"textLines":1,"bbox":[72,305,700,34]}
+{"kind":"textbox","id":"sh/07el83m1","slide":14,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,372,52,24]}
+{"kind":"textbox","id":"sh/z65kzy5g","slide":14,"text":"Public data can test an experimental model","textPreview":"Public data can test an experimental model","textChars":42,"textLines":1,"bbox":[140,369,950,42]}
+{"kind":"textbox","id":"sh/e5wj6t4v","slide":14,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[72,438,52,24]}
+{"kind":"textbox","id":"sh/d4n2x8na","slide":14,"text":"Sample profiles can safely demonstrate an interface","textPreview":"Sample profiles can safely demonstrate an interface","textChars":51,"textLines":1,"bbox":[140,435,950,42]}
+{"kind":"textbox","id":"sh/s3e143m5","slide":14,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[72,504,52,24]}
+{"kind":"textbox","id":"sh/qlofid4f","slide":14,"text":"AI can explore clearer explanations of calculated results","textPreview":"AI can explore clearer explanations of calculated results","textChars":57,"textLines":1,"bbox":[140,501,950,42]}
+{"kind":"textbox","id":"sh/bmxgbyl0","slide":14,"text":"Questions?","textPreview":"Questions?","textChars":10,"textLines":1,"bbox":[72,612,300,50]}
+{"kind":"textbox","id":"sh/cn6xk32l","slide":14,"text":"WELLPATH  •  CONCEPT PROTOTYPE","textPreview":"WELLPATH  •  CONCEPT PROTOTYPE","textChars":30,"textLines":1,"bbox":[72,685,440,18]}
+{"kind":"textbox","id":"sh/dozyd836","slide":14,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[1165,682,42,20]}
+{"kind":"notes","id":"nt/dtgm8v","slide":14,"text":"Close by returning to the central question. WellPath is valuable as a concept because it keeps three ideas connected but distinct: public health data for model experimentation, fictional profiles for interface demonstration, and AI for explanation. Invite questions about the design choices, model experiment, or limitations.\n\n[Sources]\n- C:\\Users\\Mahir\\Desktop\\WellPath\\wellpath-condition-models\\README.md"}
