@@ -1,0 +1,432 @@
+import express from 'express';
+import { pool } from '../config/db.js';
+import { authenticate } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// All routes require authentication
+router.use(authenticate);
+
+// GET /api/patient/:id/dashboard
+router.get('/:id/dashboard', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        f.steps,
+        f.sleep_hours,
+        f.sleep_bedtime,
+        f.sleep_wake_time,
+        f.sleep_interruptions,
+        f.sleep_consistency,
+        f.resting_heart_rate,
+        f.exercise_minutes,
+        f.calories_burned,
+        f.active_calories,
+        f.active_minutes,
+        f.bmi,
+        f.systolic_bp,
+        f.diastolic_bp,
+        f.record_date,
+        f.workout_count,
+        f.workout_intensity,
+        f.diet_score,
+        f.stress_level,
+        f.sedentary_hours,
+        f.longest_inactive_minutes,
+        pref.step_goal,
+        pref.sleep_goal_hours,
+        pref.exercise_goal_minutes,
+        pref.active_minute_goal,
+        pref.sedentary_limit_hours,
+        pref.active_calorie_goal,
+        pref.resting_hr_baseline_low,
+        pref.resting_hr_baseline_high,
+        pref.bp_systolic_target_max,
+        pref.bp_diastolic_target_max,
+        p.date_of_birth,
+        p.birthday,
+        p.age,
+        p.gender,
+        p.height_inches,
+        p.weight_lbs
+      FROM patient_daily_health_fact f
+      JOIN patient_profiles pp ON pp.patient_id = f.patient_id
+      JOIN user_pii p ON p.user_id = pp.user_id
+      LEFT JOIN patient_metric_preferences pref ON pref.patient_id = f.patient_id
+      WHERE f.patient_id = ?
+      ORDER BY f.record_date DESC
+      LIMIT 1
+    `, [req.params.id]);
+
+    res.json(rows[0] || {});
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// How many days of history an endpoint returns. Defaults to a full year so
+// long-term progress, seasonal views and correlations have enough data; callers
+// can pass ?days=N to request a smaller window. Capped to keep payloads sane.
+const historyDays = (req, fallback = 365) => {
+  const n = parseInt(req.query.days, 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(n, 1), 730);
+};
+
+// GET /api/patient/:id/trends  (?days=N, default 365)
+router.get('/:id/trends', async (req, res) => {
+  try {
+    const limit = historyDays(req);
+    const [rows] = await pool.query(`
+      SELECT
+        record_date as day,
+        record_date as recordDate,
+        steps,
+        sleep_hours as sleep,
+        sleep_bedtime as bedtime,
+        sleep_wake_time as wakeTime,
+        sleep_interruptions as sleepInterruptions,
+        sleep_consistency as sleepConsistency,
+        resting_heart_rate as hr,
+        exercise_minutes as exercise,
+        active_minutes as activeMinutes,
+        calories_burned as caloriesBurned,
+        active_calories as activeCalories,
+        sedentary_hours as sedentaryHours,
+        longest_inactive_minutes as longestInactiveMinutes,
+        workout_count as workoutCount,
+        workout_intensity as workoutIntensity,
+        stress_level as stress,
+        systolic_bp as systolicBp,
+        diastolic_bp as diastolicBp
+      FROM patient_daily_health_fact
+      WHERE patient_id = ?
+      ORDER BY record_date DESC
+      LIMIT ${limit}
+    `, [req.params.id]);
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const formatted = rows.map(row => ({
+      ...row,
+      day: days[new Date(row.day).getDay()]
+    })).reverse();
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('Trends error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== Mood log =====
+// One mood entry (1-5) per patient per day. Table auto-creates on first use.
+let moodTableReady = null;
+function ensureMoodTable() {
+  if (!moodTableReady) {
+    moodTableReady = pool.query(`
+      CREATE TABLE IF NOT EXISTS patient_mood_log (
+        patient_id INT NOT NULL,
+        record_date DATE NOT NULL,
+        mood TINYINT NOT NULL,
+        note VARCHAR(200) NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (patient_id, record_date)
+      )
+    `).catch((error) => {
+      moodTableReady = null;
+      throw error;
+    });
+  }
+  return moodTableReady;
+}
+
+// GET /api/patient/:id/mood — mood entries, oldest first (?days=N, default 365)
+router.get('/:id/mood', async (req, res) => {
+  try {
+    await ensureMoodTable();
+    const limit = historyDays(req);
+    const [rows] = await pool.query(`
+      SELECT record_date AS date, mood, note
+      FROM patient_mood_log
+      WHERE patient_id = ?
+      ORDER BY record_date DESC
+      LIMIT ${limit}
+    `, [req.params.id]);
+    res.json(rows.reverse());
+  } catch (error) {
+    console.error('Mood log error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/patient/:id/mood — upsert today's (or a given date's) mood
+router.post('/:id/mood', async (req, res) => {
+  try {
+    const { mood, date, note } = req.body;
+    const moodValue = Number(mood);
+    if (!Number.isInteger(moodValue) || moodValue < 1 || moodValue > 5) {
+      return res.status(400).json({ error: 'Mood must be an integer from 1 to 5' });
+    }
+    const recordDate = date || new Date().toISOString().slice(0, 10);
+
+    await ensureMoodTable();
+    await pool.query(`
+      INSERT INTO patient_mood_log (patient_id, record_date, mood, note)
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE mood = VALUES(mood), note = VALUES(note)
+    `, [req.params.id, recordDate, moodValue, note || null]);
+
+    res.status(201).json({ date: recordDate, mood: moodValue, note: note || null });
+  } catch (error) {
+    console.error('Save mood error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== Period / cycle log =====
+// One row per logged period start. Table auto-creates on first use.
+let periodTableReady = null;
+function ensurePeriodTable() {
+  if (!periodTableReady) {
+    periodTableReady = pool.query(`
+      CREATE TABLE IF NOT EXISTS patient_period_log (
+        patient_id INT NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NULL,
+        notes VARCHAR(200) NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (patient_id, start_date)
+      )
+    `).catch((error) => {
+      periodTableReady = null;
+      throw error;
+    });
+  }
+  return periodTableReady;
+}
+
+const isDateString = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+
+// GET /api/patient/:id/periods — recent logged cycles (oldest first)
+router.get('/:id/periods', async (req, res) => {
+  try {
+    await ensurePeriodTable();
+    const [rows] = await pool.query(`
+      SELECT start_date AS startDate, end_date AS endDate
+      FROM patient_period_log
+      WHERE patient_id = ?
+      ORDER BY start_date DESC
+      LIMIT 24
+    `, [req.params.id]);
+    res.json(rows.reverse());
+  } catch (error) {
+    console.error('Period log error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/patient/:id/periods — log (or update) a period start
+router.post('/:id/periods', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+    if (!isDateString(startDate)) {
+      return res.status(400).json({ error: 'startDate must be YYYY-MM-DD' });
+    }
+    if (endDate && !isDateString(endDate)) {
+      return res.status(400).json({ error: 'endDate must be YYYY-MM-DD' });
+    }
+    await ensurePeriodTable();
+    await pool.query(`
+      INSERT INTO patient_period_log (patient_id, start_date, end_date)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE end_date = VALUES(end_date)
+    `, [req.params.id, startDate, endDate || null]);
+    res.status(201).json({ startDate, endDate: endDate || null });
+  } catch (error) {
+    console.error('Save period error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/patient/:id/periods/:date — remove a mislogged start
+router.delete('/:id/periods/:date', async (req, res) => {
+  try {
+    if (!isDateString(req.params.date)) {
+      return res.status(400).json({ error: 'date must be YYYY-MM-DD' });
+    }
+    await ensurePeriodTable();
+    await pool.query(
+      'DELETE FROM patient_period_log WHERE patient_id = ? AND start_date = ?',
+      [req.params.id, req.params.date]
+    );
+    res.json({ removed: req.params.date });
+  } catch (error) {
+    console.error('Delete period error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/patient/:id/goals
+router.get('/:id/goals', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        goal_id as id,
+        goal_text as title,
+        goal_status as status
+      FROM goals
+      WHERE patient_id = ?
+      ORDER BY goal_id
+    `, [req.params.id]);
+
+    const formatted = rows.map(row => ({
+      ...row,
+      status: row.status === 'completed' ? 'Complete' : 
+              row.status === 'in_progress' ? 'In progress' : 'Planned'
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('Goals error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/patient/:id/goals
+router.post('/:id/goals', async (req, res) => {
+  try {
+    const { title, status } = req.body;
+    const patientId = req.params.id;
+
+    if (!title) {
+      return res.status(400).json({ error: 'Goal title required' });
+    }
+
+    const goalStatus = status === 'Complete' ? 'completed' :
+                      status === 'In progress' ? 'in_progress' : 'planned';
+
+    const [result] = await pool.query(`
+      INSERT INTO goals (patient_id, goal_text, goal_status, target_date)
+      VALUES (?, ?, ?, ?)
+    `, [patientId, title, goalStatus, new Date(Date.now() + 7 * 86400000)]);
+
+    res.status(201).json({
+      id: result.insertId,
+      title,
+      status: status || 'Planned'
+    });
+  } catch (error) {
+    console.error('Add goal error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PATCH /api/patient/goals/:id
+router.patch('/goals/:id', async (req, res) => {
+  try {
+    const { status, title } = req.body;
+    const goalId = req.params.id;
+
+    let query = 'UPDATE goals SET ';
+    const params = [];
+
+    if (status) {
+      const goalStatus = status === 'Complete' ? 'completed' :
+                        status === 'In progress' ? 'in_progress' : 'planned';
+      query += 'goal_status = ? ';
+      params.push(goalStatus);
+    }
+    if (title) {
+      if (status) query += ', ';
+      query += 'goal_text = ? ';
+      params.push(title);
+    }
+    query += 'WHERE goal_id = ?';
+    params.push(goalId);
+
+    await pool.query(query, params);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Update goal error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/patient/:id/care-team — the patient's assigned trainer & clinician,
+// plus the latest encouragement note their trainer wrote (read-only for the
+// patient). This is the destination for the note the trainer writes in their
+// own dashboard, closing the loop between the two views.
+router.get('/:id/care-team', async (req, res) => {
+  try {
+    const patientId = req.params.id;
+
+    const [rows] = await pool.query(`
+      SELECT
+        pp.primary_focus,
+        clin.full_name AS clinician_name,
+        trn.full_name  AS trainer_name
+      FROM patient_profiles pp
+      LEFT JOIN care_assignments ca ON ca.patient_id = pp.patient_id AND ca.end_date IS NULL
+      LEFT JOIN user_pii clin ON clin.user_id = ca.clinician_user_id
+      LEFT JOIN user_pii trn  ON trn.user_id  = ca.trainer_user_id
+      WHERE pp.patient_id = ?
+      LIMIT 1
+    `, [patientId]);
+
+    const [noteRows] = await pool.query(`
+      SELECT note_text, created_at
+      FROM trainer_notes
+      WHERE patient_id = ?
+      ORDER BY note_id DESC
+      LIMIT 1
+    `, [patientId]);
+
+    const row = rows[0] || {};
+    res.json({
+      primaryFocus: row.primary_focus || null,
+      trainer: row.trainer_name ? { name: row.trainer_name } : null,
+      clinician: row.clinician_name ? { name: row.clinician_name } : null,
+      trainerNote: noteRows[0]
+        ? { text: noteRows[0].note_text, date: noteRows[0].created_at }
+        : null,
+    });
+  } catch (error) {
+    console.error('Care team error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/patient/:id/profile
+router.get('/:id/profile', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        pp.patient_id,
+        pp.consent_status,
+        pp.primary_focus,
+        p.full_name,
+        p.date_of_birth,
+        p.birthday,
+        p.age,
+        p.height_inches,
+        p.weight_lbs,
+        p.gender,
+        p.email
+      FROM patient_profiles pp
+      JOIN user_pii p ON p.user_id = pp.user_id
+      WHERE pp.patient_id = ?
+    `, [req.params.id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Profile error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;

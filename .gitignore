@@ -1,0 +1,55 @@
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Node ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ---- Build output ----
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# ---- Logs / runtime ----
+*.log
+*.stderr.log
+*.stdout.log
+.*.stderr.log
+.*.stdout.log
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# ---- Large datasets & exports (keep out of git) ----
+mcphases-a-dataset-of-physiological-hormonal-and-self-reported-events-and-symptoms-for-menstrual-health-tracking-with-wearables-1.0.0/
+powerbi_exports/
+*.sqlite
+*.db
+
+# ---- Scratch / build workspaces ----
+tmp/
+.deck-build/
+.deck-edit/
+.persona-edit/
+.poster-build/
+.profiles-edit/
+.slide2-edit/
+.slide6-edit/

@@ -1,0 +1,13 @@
+province,sex,age_group,weight_class,diabetes,high_bp,smoking,life_stress,household_income
+New Brunswick,Female,65 and older,Normal/Underweight,No,No,Former daily smoker (non-smoker now),A bit stressful,"$60,000 to $79,999"
+Newfoundland and Labrador,Male,65 and older,Overweight/Obese,Yes,Yes,Lifetime abstainer (never smoked a whole cigarette),Not very stressful,"$60,000 to $79,999"
+Prince Edward Island,Female,65 and older,Overweight/Obese,No,Yes,Lifetime abstainer (never smoked a whole cigarette),Not very stressful,"$20,000 to $39,999"
+Quebec,Male,65 and older,Overweight/Obese,No,Yes,Lifetime abstainer (never smoked a whole cigarette),Not at all stressful,"$80,000 or more"
+Manitoba,Male,65 and older,Overweight/Obese,No,Yes,Lifetime abstainer (never smoked a whole cigarette),Not at all stressful,"$20,000 to $39,999"
+British Columbia,Male,65 and older,Normal/Underweight,Yes,Yes,Former daily smoker (non-smoker now),Not at all stressful,"$80,000 or more"
+Quebec,Male,65 and older,Normal/Underweight,No,No,Former daily smoker (non-smoker now),Not at all stressful,"$20,000 to $39,999"
+Manitoba,Female,65 and older,Overweight/Obese,No,Yes,Former daily smoker (non-smoker now),A bit stressful,"$80,000 or more"
+New Brunswick,Female,50 to 64 years,Overweight/Obese,No,No,Current daily smoker,Not very stressful,"$80,000 or more"
+British Columbia,Male,35 to 49 years,Normal/Underweight,No,No,Lifetime abstainer (never smoked a whole cigarette),A bit stressful,"$80,000 or more"
+Saskatchewan,Male,65 and older,Overweight/Obese,No,No,Former daily smoker (non-smoker now),A bit stressful,"$80,000 or more"
+Manitoba,Male,35 to 49 years,Overweight/Obese,No,No,Current daily smoker,Not very stressful,"$60,000 to $79,999"

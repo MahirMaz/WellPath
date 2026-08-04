@@ -1,0 +1,9 @@
+Research finding,Dataset,WellPath field or feature supported,Possible use,Important limitation,Verification status
+Family history association,NHANES,Optional family-history onboarding questions,Background risk context,Must not be treated as genetic testing,Needs review
+Risk-score gradient,NHANES,Transparent baseline risk score,Simple explainable comparison,Requires documented scoring thresholds and validation,Needs review
+Adjusted multivariable model,NHANES,Combined KPI analysis,Shows why factors should be analyzed together,Odds ratios need confidence intervals,Needs review
+County geographic variation,CDC PLACES,Optional broad regional context,Population-health comparison,Must not become individual risk,Needs review
+County correlations,CDC PLACES,Population-level context,Shows risk factors clustering geographically,Ecological fallacy risk,Needs review
+Provincial prevalence,Statistics Canada CCHS,Canadian regional research context,Supports geography discussion,Province may act as a proxy for population makeup,Needs review
+Adjusted geography result,Statistics Canada CCHS,Low-weight geography variable,Avoid overvaluing location,Exact model metric must be verified,Needs review
+Weight-class difference,Statistics Canada CCHS,Weight and BMI context,Lifestyle and clinical interpretation,Association is not causation,Needs review
