@@ -1,7 +1,22 @@
-import React from 'react';
-import { SlidersHorizontal, Bot, Settings as SettingsIcon, Sun, Moon, LogOut, Sparkles, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { SlidersHorizontal, Bot, Settings as SettingsIcon, Sun, Moon, LogOut, Sparkles, EyeOff, BrainCircuit, Plus, X } from 'lucide-react';
+import { getMemory, removeFact, addFact } from './aiMemory.js';
 
-export function PatientSettingsPage({ metrics, visibleMetrics, setVisibleMetrics, aiEnabled, setAiEnabled, theme, setTheme, onLogout, user }) {
+export function PatientSettingsPage({ patientId, metrics, visibleMetrics, setVisibleMetrics, aiEnabled, setAiEnabled, theme, setTheme, onLogout, user }) {
+  const [memory, setMemory] = useState([]);
+  const [newFact, setNewFact] = useState('');
+
+  useEffect(() => { setMemory(getMemory(patientId)); }, [patientId]);
+
+  const dropFact = (fact) => setMemory(removeFact(patientId, fact));
+  const submitFact = (e) => {
+    e.preventDefault();
+    const f = newFact.trim();
+    if (!f) return;
+    setMemory(addFact(patientId, f));
+    setNewFact('');
+  };
+
   const toggleMetric = (metricId) => {
     setVisibleMetrics((items) => {
       if (items.includes(metricId)) {
@@ -29,6 +44,26 @@ export function PatientSettingsPage({ metrics, visibleMetrics, setVisibleMetrics
           {aiEnabled ? <Sparkles size={16} /> : <EyeOff size={16} />}
           {aiEnabled ? 'AI on' : 'AI off'}
         </button>
+      </section>
+
+      <section className="settings-panel">
+        <h3><BrainCircuit size={18} /> What your AI remembers</h3>
+        <p className="settings-sub">Things you've told your AI, used to tailor every insight. Add your own or remove any.</p>
+        <div className="mem-list">
+          {memory.length === 0 && (
+            <p className="mem-empty">Nothing yet. Ask a question in your own words on any tab, or add something below.</p>
+          )}
+          {memory.map((fact) => (
+            <span className="mem-chip" key={fact}>
+              {fact}
+              <button type="button" aria-label={`Forget: ${fact}`} onClick={() => dropFact(fact)}><X size={13} /></button>
+            </span>
+          ))}
+        </div>
+        <form className="mem-add" onSubmit={submitFact}>
+          <input value={newFact} onChange={(e) => setNewFact(e.target.value)} placeholder="e.g. I have knee pain, or I work night shifts" />
+          <button type="submit" aria-label="Add" disabled={!newFact.trim()}><Plus size={16} /></button>
+        </form>
       </section>
 
       <section className="settings-panel">

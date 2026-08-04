@@ -8,6 +8,7 @@ import { PatientAppHeader } from './patient/PatientAppHeader.jsx';
 import { PatientToday } from './patient/PatientToday.jsx';
 import { HealthSummary } from './patient/HealthSummary.jsx';
 import { TrainerPage } from './patient/TrainerPage.jsx';
+import { getMemory } from './patient/aiMemory.js';
 import { ClinicalDataPage } from './patient/ClinicalDataPage.jsx';
 import { PatientSettingsPage } from './patient/PatientSettingsPage.jsx';
 import { MoodPage } from './patient/MoodPage.jsx';
@@ -356,6 +357,13 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       return 'AI insights are turned off. Turn them back on in Settings if you want generated explanations.';
     }
 
+    // Personalization memory: fold anything the user has told the app about
+    // themselves into every insight, so guidance stays tailored across tabs.
+    const memory = getMemory(patientId);
+    const payload = memory.length
+      ? { ...target, targetContext: { ...(target.targetContext || {}), userMemory: memory } }
+      : target;
+
     const token = localStorage.getItem('authToken');
     const response = await fetch('http://localhost:3000/api/ai/insights', {
       method: 'POST',
@@ -365,7 +373,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       },
       body: JSON.stringify({
         patientId,
-        ...target,
+        ...payload,
       }),
     });
 
@@ -415,8 +423,9 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       <PatientAppHeader patientData={currentPatient} aiEnabled={aiEnabled} />
       <div className="patient-screen-stage">
         {screen === 'dashboard' && (
-          <PatientToday 
-            patientData={currentPatient} 
+          <PatientToday
+            patientId={patientId}
+            patientData={currentPatient}
             scores={patientScores}
             kpis={patientKpis}
             metrics={metrics} 
@@ -430,6 +439,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
         )}
         {screen === 'summary' && (
           <HealthSummary
+            patientId={patientId}
             healthLog={healthLog}
             patientData={currentPatient}
             initialMetricId={breakdownMetric}
@@ -460,7 +470,12 @@ function PatientView({ user, onLogout, theme, setTheme }) {
           <RiskSignal />
         )}
         {screen === 'nutrition' && (
-          <NutritionTab onGoToRisk={() => { setBreakdownMetric(null); setScreen('risk'); }} />
+          <NutritionTab
+            patientId={patientId}
+            aiEnabled={aiEnabled}
+            onGenerateAiInsight={generateDashboardAiInsight}
+            onGoToRisk={() => { setBreakdownMetric(null); setScreen('risk'); }}
+          />
         )}
         {screen === 'trainer' && (
           <TrainerPage
@@ -481,12 +496,13 @@ function PatientView({ user, onLogout, theme, setTheme }) {
           />
         )}
         {screen === 'settings' && (
-          <PatientSettingsPage 
-            metrics={metrics} 
-            visibleMetrics={visibleMetrics} 
-            setVisibleMetrics={setVisibleMetrics} 
-            aiEnabled={aiEnabled} 
-            setAiEnabled={setAiEnabled} 
+          <PatientSettingsPage
+            patientId={patientId}
+            metrics={metrics}
+            visibleMetrics={visibleMetrics}
+            setVisibleMetrics={setVisibleMetrics}
+            aiEnabled={aiEnabled}
+            setAiEnabled={setAiEnabled}
             theme={theme} 
             setTheme={setTheme} 
             onLogout={onLogout}

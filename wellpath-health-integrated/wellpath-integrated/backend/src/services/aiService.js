@@ -88,6 +88,41 @@ async function createCompletionWithFailover(params, preferredIndex = null) {
 
 export const TARGETED_INSIGHT_FALLBACK = "I'm having trouble generating this insight right now. Please try again later.";
 
+// Pull durable personal facts out of a free-text message the user typed, so the
+// app can remember them and tailor future insights. Returns a JSON array of
+// short strings (empty when there's nothing lasting to remember).
+export async function extractMemoryFacts(message) {
+  const text = String(message || '').trim();
+  if (!text) return [];
+  const system = `You extract durable personal facts from a user's message that would help a wellness app tailor future lifestyle guidance for them.
+Return ONLY a JSON array of short strings, each a concise standalone fact (max ~10 words), written in third person.
+Extract LASTING facts: habits, routines, schedule, constraints, physical limitations or conditions they mention, dietary preferences, and goals. Examples: ["works night shifts","has knee pain","vegetarian","training for a 10k","doesn't like mornings"].
+Do NOT extract: one-off questions, a single day's transient feeling, generic small talk, or anything not specifically about this person.
+If there is nothing lasting to remember, return []. Output the JSON array and nothing else.`;
+  try {
+    const completion = await createCompletionWithFailover({
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: text },
+      ],
+      model: GROQ_MODEL,
+      temperature: 0.1,
+      max_tokens: 160,
+    });
+    const raw = completion.choices[0]?.message?.content?.trim() || '[]';
+    const match = raw.match(/\[[\s\S]*\]/);
+    const arr = JSON.parse(match ? match[0] : '[]');
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter((x) => typeof x === 'string' && x.trim())
+      .map((x) => x.trim().slice(0, 120))
+      .slice(0, 8);
+  } catch (error) {
+    console.error('extractMemoryFacts error:', error);
+    return [];
+  }
+}
+
 export function isCompleteInsightText(text) {
   const value = String(text || '').trim();
   if (value.length < 30) return false;
@@ -441,6 +476,10 @@ function buildTargetedInsightPrompt({ patientData, latestMetrics, trends, isClin
   return `
 You are the WellPath AI insight writer for a patient dashboard.
 
+USER QUESTIONS (highest priority): If the target context includes a "userQuestion" field, ANSWER THAT QUESTION directly and specifically instead of writing a generic insight. Use the person's data to answer, keep it to 2-3 short sentences, plain and practical, and lifestyle-only (never diagnose, treat, or give dosing). If the question falls outside health and lifestyle, or the data cannot answer it, say so briefly and suggest what they could track. Do not repeat the question back.
+
+PERSONAL CONTEXT: The target context may include a "userMemory" array — things this person has previously told the app about themselves (habits, schedule, constraints, physical limitations, dietary preferences, goals). When it is present, tailor your guidance to fit it and avoid suggestions that conflict with it (for example, if they mention knee pain, don't suggest running; if they work night shifts, don't assume a normal bedtime). Weave it in naturally and only when relevant — never list it back to them or say "you told me".
+
 Write 1-2 sentences, roughly 25-40 words. Be skimmable and specific — no opening summary, no filler.
 Speak directly to the user using "you" and "your".
 Make every insight genuinely useful, not generic. First, name the specific pattern in THEIR data that actually matters here (e.g. "your bedtime keeps drifting later", "you sit for long unbroken stretches in the afternoon"). Then give ONE concrete, realistic action they could start today — tied to a cue or time of day — and, when it fits in the word budget, a short reason it helps so it teaches rather than just tells. Avoid advice so generic it could apply to anyone.
@@ -472,10 +511,10 @@ For mood analysis (the target context contains daily mood ratings 1-5 alongside 
 - Allow 2-3 sentences (up to ~45 words) for this type only. Name the pattern in plain words (e.g. "your mood dips after short-sleep nights"), then give ONE concrete action targeting the strongest factor.
 - Mood is subjective — say "tends to" or "often", never claim certainty, and never mention depression or any diagnosis.
 
-For predictive analysis (the target context contains per-metric trend slopes and projected next-week values computed from the last 30 days):
-- Describe where their habits are heading IF the current pattern holds — always conditional ("if this continues", "at this pace"), never certain.
-- Allow 2-3 sentences (up to ~50 words). Pick the 1-2 most consequential projections (improving or worsening), say what next week likely looks like, and give ONE preventive or reinforcing action.
-- Do not predict medical events, diagnoses, or specific clinical outcomes — only habit and metric trends.
+For trend analysis (the target context contains per-metric recent averages and trend directions over the last ~30 days):
+- Identify the 1-2 most consistent or notable trends (rising, falling, or holding steady) and name them plainly. Do NOT forecast, project, or predict future values — describe the trend that is already there.
+- Allow 2-3 sentences (up to ~50 words). For each trend you name, give ONE concrete, realistic way to build on it (if it's positive) or improve it (if it's slipping), tied to a cue or time of day.
+- Do not predict medical events, diagnoses, or clinical outcomes.
 
 For cycle analysis (the target context contains cycle statistics computed from the patient's own logged period history, plus how their recent physiology compares with their baseline):
 - The predicted date and how soon it is are ALREADY calculated (see predictedStart and daysUntilPredicted). Never recalculate or invent a different date or day count. If you mention how soon it is, use the daysUntilPredicted value exactly — do not state any other number of days.
@@ -507,7 +546,7 @@ RECENT TREND DATA:
 ${JSON.stringify(compactTrends)}
 
 TYPE:
-${isCycle ? 'Cycle analysis — interpret the already-calculated prediction and corroborating physiological signals; never recalculate the date, never diagnose' : isPrediction ? 'Predictive analysis — conditional forecast of where current habit trends are heading, with one preventive action' : isMood ? 'Mood analysis — explain which physiological factors most likely affect their mood, using the provided correlations' : isScore ? 'Overall score — skip any summary; target the weakest factors with one concrete action' : isClinical ? 'Clinical/range KPI' : 'Lifestyle KPI'}
+${isCycle ? 'Cycle analysis — interpret the already-calculated prediction and corroborating physiological signals; never recalculate the date, never diagnose' : isPrediction ? 'Trend analysis — name the 1-2 most consistent recent trends and how to build on or improve each; do NOT forecast future values' : isMood ? 'Mood analysis — explain which physiological factors most likely affect their mood, using the provided correlations' : isScore ? 'Overall score — skip any summary; target the weakest factors with one concrete action' : isClinical ? 'Clinical/range KPI' : 'Lifestyle KPI'}
 `;
 }
 

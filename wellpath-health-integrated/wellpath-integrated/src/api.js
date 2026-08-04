@@ -102,6 +102,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ mood, date }),
     }),
+  extractMemory: (message) =>
+    request('/ai/remember', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
   addGoal: (patientId, title, status) => 
     request(`/patient/${patientId}/goals`, {
       method: 'POST',

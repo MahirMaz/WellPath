@@ -2,9 +2,10 @@ import React from 'react';
 import { Utensils, Gauge, ArrowRight } from 'lucide-react';
 import { useHealthProfile } from '../shared/profileContext.jsx';
 import { NutritionLogger } from './NutritionLogger.jsx';
+import { AiInsightBox } from '../patient/AiInsightBox.jsx';
 import './nutrition.css';
 
-export function NutritionTab({ onGoToRisk }) {
+export function NutritionTab({ patientId, aiEnabled = true, onGenerateAiInsight, onGoToRisk }) {
   const { profile: v, set } = useHealthProfile();
 
   const num = (k, label, help) => (
@@ -37,6 +38,29 @@ export function NutritionTab({ onGoToRisk }) {
           <button type="button" className="nt-link" onClick={onGoToRisk}>View Risk Signals <ArrowRight size={14} /></button>
         )}
       </section>
+
+      {aiEnabled && onGenerateAiInsight && (
+        <AiInsightBox
+          title="Ask about your nutrition"
+          aiEnabled={aiEnabled}
+          patientId={patientId}
+          presets={[
+            { label: 'Is my diet balanced?', question: 'Based on my eating habits, does my diet look balanced, and what could I improve?' },
+            { label: 'Eat a bit healthier', question: 'What is one realistic change to eat a little healthier this week?' },
+            { label: 'Cut back on fast food', question: 'I eat fast food fairly often; how could I cut back without it feeling like a big change?' },
+          ]}
+          onAsk={(question) => onGenerateAiInsight({
+            insightType: 'nutrition',
+            targetId: 'nutrition',
+            targetTitle: 'Nutrition',
+            targetContext: {
+              userQuestion: question,
+              fastFoodPerWeek: v.fast_food,
+              mealsNotHomePerWeek: v.meals_not_home,
+            },
+          })}
+        />
+      )}
     </div>
   );
 }

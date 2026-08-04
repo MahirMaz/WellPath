@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Droplets, CalendarDays, ShieldCheck, Plus, Trash2, ChevronDown } from 'lucide-react';
 import { api } from '../../api';
+import { AiInsightBox } from './AiInsightBox.jsx';
 
 const DAY_MS = 86400000;
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
@@ -380,7 +381,7 @@ function CycleFactors({ stats }) {
   );
 }
 
-export function CyclePage({ patientId, healthLog = [] }) {
+export function CyclePage({ patientId, healthLog = [], aiEnabled = true, onGenerateAiInsight }) {
   const [periods, setPeriods] = useState([]);
   const [startInput, setStartInput] = useState(todayKey());
   const [saveNote, setSaveNote] = useState('');
@@ -560,6 +561,37 @@ export function CyclePage({ patientId, healthLog = [] }) {
           <div className="connection-item"><p>Not enough recent health data to compare signals yet.</p></div>
         )}
       </section>
+
+      {aiEnabled && stats.enough && (
+        <AiInsightBox
+          title="Ask about your cycle"
+          aiEnabled={aiEnabled}
+          patientId={patientId}
+          presets={[
+            { label: 'Why this date?', question: 'In plain terms, why is my next period estimated for this date?' },
+            { label: 'Is my cycle regular?', question: 'Does my logged history suggest my cycle is regular or variable?' },
+            { label: 'What affects the estimate?', question: 'What factors change my predicted next-period date?' },
+          ]}
+          onAsk={(question) => onGenerateAiInsight({
+            insightType: 'cycle',
+            targetId: 'cycle',
+            targetTitle: 'Cycle outlook',
+            targetContext: {
+              userQuestion: question,
+              predictedStart: dateKey(stats.predicted.toISOString()),
+              daysUntilPredicted: stats.daysUntil,
+              expectedCycleLength: Math.round(stats.expectedLength),
+              regularity: stats.regularity,
+              fittedRecencyWeight: stats.fittedAlpha,
+              modelAccuracyDays: stats.modelError,
+              signalAdjustmentDays: stats.adjustmentDays,
+              currentPhase: stats.phase,
+              dayInCycle: stats.dayInCycle,
+              cyclesLogged: stats.cyclesLogged,
+            },
+          })}
+        />
+      )}
 
       <div className="quiet-disclaimer">
         <ShieldCheck size={15} /> Estimates from your logged history — not medical advice, and not for preventing or planning pregnancy.
