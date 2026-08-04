@@ -48,8 +48,17 @@ powerbi_exports/
 tmp/
 .deck-build/
 .deck-edit/
+.deck-review-current/
 .persona-edit/
+.personalization-slide-edit/
+.plain-language-edit/
+.profile-detail-edit/
+.weighted-formula-edit/
 .poster-build/
 .profiles-edit/
 .slide2-edit/
 .slide6-edit/
+
+# ---- Local assistant/editor state ----
+.claude/settings.local.json
+*_BACKUP.pptx

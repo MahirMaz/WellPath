@@ -20,6 +20,8 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
+import { AiInsightBox, PersonalizedHint } from './AiInsightBox.jsx';
+import { getMemory } from './aiMemory.js';
 
 function hashString(value) {
   let hash = 0;
@@ -160,7 +162,7 @@ function buildBestNextMove(kpis = []) {
   return { kpiId: null, text: 'You are on track across the board — keep your routine steady today.' };
 }
 
-export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, onGenerateAiInsight, onAskAi, aiAnswer, setScreen, onOpenBreakdown }) {
+export function PatientToday({ patientId, patientData, scores, kpis, metrics, aiEnabled, onGenerateAiInsight, onAskAi, aiAnswer, setScreen, onOpenBreakdown }) {
   const recovery = metrics.find((metric) => metric.id === 'recovery');
   const [expandedScore, setExpandedScore] = useState(null);
   const [expandedKpi, setExpandedKpi] = useState(null);
@@ -169,6 +171,7 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
   const inFlightInsightsRef = useRef(new Map());
   const focusedScore = scores.find((score) => score.id === expandedScore);
   const bestNextMove = buildBestNextMove(kpis);
+  const personalized = patientId ? getMemory(patientId).length > 0 : false;
   const kpiRows = [];
 
   // From a score's factor, jump to that metric's KPI card: collapse the score,
@@ -303,6 +306,7 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
           <FocusedScoreCard
             score={focusedScore}
             aiEnabled={aiEnabled}
+            personalized={personalized}
             aiInsight={cardInsights[`score:${focusedScore.id}`]?.text}
             aiStatus={cardInsights[`score:${focusedScore.id}`]?.status}
             onClose={() => setExpandedScore(null)}
@@ -367,6 +371,7 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
                 <ExpandedKpiCard
                   kpi={expandedInRow}
                   aiEnabled={aiEnabled}
+                  personalized={personalized}
                   aiInsight={cardInsights[`kpi:${expandedInRow.id}`]?.text}
                   aiStatus={cardInsights[`kpi:${expandedInRow.id}`]?.status}
                   onClose={() => setExpandedKpi(null)}
@@ -386,34 +391,23 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
       </div>
 
       {aiEnabled && (
-      <section className="ai-preview-card">
-        <div className="ai-preview-head">
-          <Sparkles size={18} />
-          <div>
-            <strong>AI insight preview</strong>
-            <p>Ask one quick question about today.</p>
-          </div>
-        </div>
-        {recovery && (
-          <AiPromptChips metric={recovery} aiEnabled={aiEnabled} onAskAi={onAskAi} compact />
-        )}
-        {aiAnswer && (
-          <div className={`ai-answer-panel featured bubble-anim ${aiAnswer.text?.includes('Analyzing your health data') ? 'loading' : ''}`}>
-            <div className="ai-answer-header">
-              <span>{aiAnswer.metric}</span>
-              <h3>{aiAnswer.prompt}</h3>
-            </div>
-            <div className="ai-answer-content">
-              <p>{aiAnswer.text}</p>
-            </div>
-            {aiAnswer.disclaimer && (
-              <div className="ai-disclaimer">
-                <span>⚠️</span> {aiAnswer.disclaimer}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+        <AiInsightBox
+          title="Ask your AI"
+          aiEnabled={aiEnabled}
+          patientId={patientId}
+          presets={[
+            { label: 'What should I focus on?', question: "Looking at my recent data, what's the single most useful thing to focus on right now?" },
+            { label: "How's my week going?", question: 'How are my main health habits trending this week?' },
+            { label: 'Improve my sleep', question: 'What could I try to improve my sleep?' },
+            { label: 'Am I active enough?', question: 'Am I getting enough activity, and how could I add a bit more?' },
+          ]}
+          onAsk={(question) => onGenerateAiInsight({
+            insightType: 'daily',
+            targetId: 'today',
+            targetTitle: 'Today',
+            targetContext: { userQuestion: question },
+          })}
+        />
       )}
 
       <div className="quiet-disclaimer"><ShieldCheck size={15} /> Lifestyle support only. Not diagnosis or medical advice.</div>
@@ -462,7 +456,7 @@ const FACTOR_TO_KPI = {
   'Sedentary-time consistency': 'sedentary',
 };
 
-function FocusedScoreCard({ score, aiEnabled, aiInsight, aiStatus, onClose, onFactorClick }) {
+function FocusedScoreCard({ score, aiEnabled, personalized, aiInsight, aiStatus, onClose, onFactorClick }) {
   if (!score) return null;
   const HeaderIcon = getScoreIcon(score.id);
 
@@ -492,6 +486,7 @@ function FocusedScoreCard({ score, aiEnabled, aiInsight, aiStatus, onClose, onFa
           <div>
             <strong>AI Insight</strong>
             <p className={aiStatus === 'loading' ? 'ai-loading-text' : ''}>{aiInsight || 'Generating your AI insight...'}</p>
+            {personalized && aiStatus === 'ready' && <div className="ai-tailored-row"><PersonalizedHint /></div>}
           </div>
         </div>
       )}
@@ -587,7 +582,7 @@ function PatientKpiCard({ kpi, onOpen }) {
   );
 }
 
-function ExpandedKpiCard({ kpi, aiEnabled, aiInsight, aiStatus, onClose, onViewDetails }) {
+function ExpandedKpiCard({ kpi, aiEnabled, personalized, aiInsight, aiStatus, onClose, onViewDetails }) {
   const Icon = getKpiIcon(kpi.id);
   const progress = kpi.progress ?? 0;
 
@@ -635,6 +630,7 @@ function ExpandedKpiCard({ kpi, aiEnabled, aiInsight, aiStatus, onClose, onViewD
           <div>
             <strong>AI Insight</strong>
             <p className={aiStatus === 'loading' ? 'ai-loading-text' : ''}>{aiInsight || 'Generating your AI insight...'}</p>
+            {personalized && aiStatus === 'ready' && <div className="ai-tailored-row"><PersonalizedHint /></div>}
           </div>
         </div>
       )}

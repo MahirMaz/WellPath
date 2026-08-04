@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link2, Sparkles, Target, ChevronDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { calculateRecoveryScore } from '../../utils/patientKpis.js';
 import { useBubbleReveal } from '../../utils/useBubbleReveal.js';
+import { PersonalizedHint } from './AiInsightBox.jsx';
+import { getMemory } from './aiMemory.js';
 
 // ===== Predictive analysis =====
 // Metrics we project forward. dir 'high' = rising is good, 'low' = falling is good.
@@ -265,7 +267,8 @@ function clampWindow(start, end, total, minLen = MIN_ZOOM_DAYS) {
   return { start: s, end: s + len - 1 };
 }
 
-export function HealthSummary({ healthLog = [], patientData = {}, initialMetricId = null, aiEnabled = true, onGenerateAiInsight }) {
+export function HealthSummary({ patientId = null, healthLog = [], patientData = {}, initialMetricId = null, aiEnabled = true, onGenerateAiInsight }) {
+  const personalized = patientId ? getMemory(patientId).length > 0 : false;
   const configs = metricConfigs(patientData);
   const validInitial = configs.some((c) => c.id === initialMetricId) ? initialMetricId : 'steps';
   const [selectedId, setSelectedId] = useState(validInitial);
@@ -303,15 +306,13 @@ export function HealthSummary({ healthLog = [], patientData = {}, initialMetricI
     try {
       const text = await onGenerateAiInsight({
         insightType: 'prediction',
-        targetId: 'forecast',
-        targetTitle: 'Next-week forecast',
+        targetId: 'trends',
+        targetTitle: 'Recent trends',
         targetContext: {
-          horizonDays: 7,
-          projections: projections.map((p) => ({
+          trends: projections.map((p) => ({
             metric: p.label,
-            currentWeeklyAvg: Number(fmtForecastVal(p.currentAvg, p.digits).replace(/,/g, '')),
-            projectedWeeklyAvg: Number(fmtForecastVal(p.projectedAvg, p.digits).replace(/,/g, '')),
-            direction: p.direction,
+            recentAverage: Number(fmtForecastVal(p.currentAvg, p.digits).replace(/,/g, '')),
+            trend: p.direction === 'up' ? 'rising' : p.direction === 'down' ? 'falling' : 'steady',
             assessment: p.tone,
           })),
         },
@@ -496,41 +497,41 @@ export function HealthSummary({ healthLog = [], patientData = {}, initialMetricI
 
       <div className="mobile-section-title">
         <div>
-          <span>Where your last 30 days are heading</span>
-          <h2>Predictive analysis</h2>
+          <span>Consistent patterns in your last 30 days</span>
+          <h2>Recent trends</h2>
         </div>
         <TrendingUp size={18} />
       </div>
 
       <section className="ai-brief-card">
-        <p>Projected next-week values if your current pattern holds.</p>
+        <p>Which habits are consistently rising, falling, or holding steady.</p>
         {shownProjections.length ? (
           <div className="forecast-grid">
             {shownProjections.map((p) => {
               const Icon = p.direction === 'flat' ? Minus : p.direction === 'up' ? TrendingUp : TrendingDown;
+              const word = p.direction === 'flat' ? 'holding steady' : p.direction === 'up' ? 'trending up' : 'trending down';
               return (
                 <div className={`forecast-card tone-${p.tone}`} key={p.key}>
                   <span className="forecast-label">{p.label}</span>
-                  <strong>
-                    {fmtForecastVal(p.currentAvg, p.digits)} <Icon size={13} /> {fmtForecastVal(p.projectedAvg, p.digits)}{p.unit ? ` ${p.unit}` : ''}
-                  </strong>
-                  <small>{p.direction === 'flat' ? 'holding steady' : 'next-week estimate'}</small>
+                  <strong>{fmtForecastVal(p.currentAvg, p.digits)}{p.unit ? ` ${p.unit}` : ''}</strong>
+                  <small><Icon size={12} /> {word}</small>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p>Not enough history yet to project trends.</p>
+          <p>Not enough history yet to spot trends.</p>
         )}
 
         {forecast ? (
           <div className="forecast-ai-text"><Sparkles size={14} /><p>{forecast}</p></div>
         ) : forecastLoading ? (
-          <div className="forecast-ai-text"><Sparkles size={14} /><p className="ai-loading-text">Projecting your patterns forward...</p></div>
+          <div className="forecast-ai-text"><Sparkles size={14} /><p className="ai-loading-text">Reading your recent trends...</p></div>
         ) : null}
+        {forecast && personalized && <PersonalizedHint />}
         {aiEnabled && onGenerateAiInsight && !forecastLoading && shownProjections.length > 0 && (
           <button type="button" className="mood-ai-btn" onClick={generateForecast}>
-            {forecast ? 'Regenerate forecast' : 'Generate AI forecast'}
+            {forecast ? 'Refresh' : 'Explain my trends'}
           </button>
         )}
       </section>

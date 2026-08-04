@@ -9,6 +9,7 @@ import {
   generateTrainerNote,
   isCompleteInsightText,
   estimateFoodNutrition,
+  extractMemoryFacts,
 } from '../services/aiService.js';
 
 const router = express.Router();
@@ -567,6 +568,20 @@ router.post('/nutrition-estimate', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Nutrition estimate error:', error);
     res.status(500).json({ error: 'Could not estimate this food. Try rephrasing, or enter values manually.' });
+  }
+});
+
+// Extract durable personal facts from something the user typed, so future
+// insights can be tailored to them. Returns { facts: [] } (never throws to client).
+router.post('/remember', authenticate, async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || !String(message).trim()) return res.json({ facts: [] });
+    const facts = await extractMemoryFacts(String(message).slice(0, 400));
+    res.json({ facts });
+  } catch (error) {
+    console.error('Memory extraction error:', error);
+    res.json({ facts: [] });
   }
 });
 
