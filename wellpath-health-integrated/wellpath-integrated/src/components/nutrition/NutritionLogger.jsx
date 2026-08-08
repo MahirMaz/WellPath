@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Sparkles, Plus, X, Info, Loader2 } from 'lucide-react';
+import { api } from '../../api';
 
 // Evidence-based daily reference points (US Dietary Guidelines / FDA) — the
 // nutrients that matter most for cardiometabolic risk.
@@ -29,13 +30,7 @@ export function NutritionLogger() {
     if (!food || loading) return;
     setLoading(true); setError('');
     try {
-      const res = await fetch('http://localhost:3000/api/ai/nutrition-estimate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken')}` },
-        body: JSON.stringify({ food }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Could not estimate that food.'); return; }
+      const data = await api.estimateNutrition(food);
       add({ name: data.name || food, kcal: data.kcal, protein: data.protein, carbs: data.carbs, sugar: data.sugar, fibre: data.fibre, fat: data.fat, satfat: data.satfat, sodium: data.sodium, ai: true });
       setQuery('');
     } catch {

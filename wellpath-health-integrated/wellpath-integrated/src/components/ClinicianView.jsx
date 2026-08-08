@@ -1,276 +1,691 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Stethoscope, Users, LogOut, Moon, Sun, RefreshCw,
-  Footprints, HeartPulse, Check, Droplets, Scale, Ruler, Activity,
+  Activity, BarChart3, CalendarDays, CheckCircle2, ClipboardList, Clock3, Download,
+  FileText, HeartPulse, History, LayoutDashboard, ListChecks, Lock, LogOut, Moon, Save, Search,
+  ShieldAlert, Stethoscope, Sun, Target, UserCheck, Users,
 } from 'lucide-react';
 import { api } from '../api';
-import { Sparkline } from './shared/Sparkline.jsx';
+import { Sparkline } from './patient/Sparkline.jsx';
 
-// Clinician dashboard — raw data only. No AI summaries, no risk/health scores or
-// other predictors: just measured values, trends, open alerts, and recorded KPIs.
+const providerTabs = [
+  { id: 'Overview', icon: LayoutDashboard, description: 'A concise view of current lifestyle trends and review needs.' },
+  { id: 'Patients', icon: Users, description: 'Find a patient and review the information they have shared.' },
+  { id: 'Trends', icon: BarChart3, description: 'Compare recent steps, sleep, heart rate, and exercise patterns.' },
+  { id: 'Signals', icon: ShieldAlert, description: 'Review non-diagnostic lifestyle signals that may support a conversation.' },
+  { id: 'Plans', icon: ClipboardList, description: 'Review patient goals and manageable lifestyle recommendations.' },
+  { id: 'Reports', icon: FileText, description: 'Preview and export a plain-language trend summary.' },
+];
+
+async function optionalFeature(request, fallback) {
+  try {
+    return await request;
+  } catch (error) {
+    if (error.status === 404) return fallback;
+    throw error;
+  }
+}
+
+function starterCarePlan(patient) {
+  return {
+    focus: patient?.primary_focus || 'Lifestyle consistency',
+    recommendation: 'Review recent patterns with the patient and agree on one manageable next step.',
+    review_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+    status: 'active',
+  };
+}
+
 function ClinicianView({ user, onLogout, theme, setTheme }) {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [signals, setSignals] = useState([]);
+  const [trends, setTrends] = useState([]);
+  const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('Overview');
-  const [resolvingIds, setResolvingIds] = useState([]);
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState('');
+  const [reportStatus, setReportStatus] = useState('');
+  const [trendRange, setTrendRange] = useState(7);
+  const [notes, setNotes] = useState([]);
+  const [carePlan, setCarePlan] = useState(null);
+  const [carePlanForm, setCarePlanForm] = useState(null);
+  const [auditEvents, setAuditEvents] = useState([]);
+  const [actionStatus, setActionStatus] = useState('');
+  const [savingAction, setSavingAction] = useState('');
 
   useEffect(() => {
     fetchPatients();
   }, []);
 
-  const fetchPatients = async () => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [activeTab]);
+
+  const loadPatient = async (patient) => {
+    setDetailLoading(true);
+    setError('');
+    setReportStatus('');
     try {
-      setLoading(true);
-      const data = await api.getClinicianPatients();
-      setPatients(data);
-      if (data.length > 0) {
-        const details = await api.getPatientDetails(data[0].patient_id);
-        setSelectedPatient({ ...data[0], details });
-      }
-    } catch (err) {
-      console.error('Failed to load patients:', err);
+      const fallbackPlan = starterCarePlan(patient);
+      const [details, trendData, goalData, noteData, carePlanData] = await Promise.all([
+        api.getPatientDetails(patient.patient_id),
+        api.getTrends(patient.patient_id),
+        api.getGoals(patient.patient_id),
+        optionalFeature(api.getClinicianNotes(patient.patient_id), []),
+        optionalFeature(api.getCarePlan(patient.patient_id), fallbackPlan),
+      ]);
+      setSelectedPatient({ ...patient, details });
+      setTrends(Array.isArray(trendData) ? trendData : []);
+      setGoals(Array.isArray(goalData) ? goalData : []);
+      setNotes(Array.isArray(noteData) ? noteData : []);
+      setCarePlan(carePlanData || fallbackPlan);
+      setCarePlanForm(carePlanData || fallbackPlan);
+    } catch (loadError) {
+      setError(loadError.message || 'The patient details could not be loaded.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const fetchPatients = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [patientData, signalData, auditData] = await Promise.all([
+        api.getClinicianPatients(),
+        optionalFeature(api.getSignals(), []),
+        optionalFeature(api.getAuditEvents(80), []),
+      ]);
+      setPatients(patientData);
+      setSignals(Array.isArray(signalData) ? signalData : []);
+      setAuditEvents(Array.isArray(auditData) ? auditData : []);
+      if (patientData.length) await loadPatient(patientData[0]);
+    } catch (loadError) {
+      setError(loadError.message || 'The clinician workspace could not be loaded.');
     } finally {
       setLoading(false);
     }
   };
 
-  const selectPatient = async (patient) => {
-    try {
-      const details = await api.getPatientDetails(patient.patient_id);
-      setSelectedPatient({ ...patient, details });
-    } catch (err) {
-      console.error('Failed to load patient details:', err);
-    }
+  const filteredPatients = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return patients;
+    return patients.filter((patient) => (
+      patient.full_name.toLowerCase().includes(normalizedQuery)
+      || patient.primary_focus?.toLowerCase().includes(normalizedQuery)
+      || patient.riskLevel?.toLowerCase().includes(normalizedQuery)
+    ));
+  }, [patients, query]);
+
+  const selectedHealth = selectedPatient?.details?.health;
+  const visibleTrends = trends.slice(-trendRange);
+  const activeTabInfo = providerTabs.find((tab) => tab.id === activeTab) || providerTabs[0];
+  const openSignalCount = signals.filter((signal) => signal.status !== 'resolved').length;
+  const averages = useMemo(() => {
+    if (!patients.length) return { score: 0, mediumRisk: 0 };
+    return {
+      score: Math.round(patients.reduce((sum, patient) => sum + Number(patient.healthScore || 0), 0) / patients.length),
+      mediumRisk: patients.filter((patient) => patient.riskLevel === 'Medium').length,
+    };
+  }, [patients]);
+
+  const exportReport = () => {
+    if (!selectedPatient) return;
+    const reportLines = [
+      'WellPath Health - Lifestyle Trend Summary',
+      `Generated: ${new Date().toLocaleString()}`,
+      `Patient: ${selectedPatient.full_name}`,
+      `Primary focus: ${selectedPatient.primary_focus || 'Not set'}`,
+      `Lifestyle review level: ${selectedPatient.riskLevel || 'Not available'}`,
+      `Steps: ${selectedHealth?.steps ?? 'Not available'}`,
+      `Sleep: ${selectedHealth?.sleep_hours ?? 'Not available'} hours`,
+      `Resting heart rate: ${selectedHealth?.resting_heart_rate ?? 'Not available'} bpm`,
+      `Exercise: ${selectedHealth?.exercise_minutes ?? 'Not available'} minutes`,
+      `Goals: ${goals.map((goal) => `${goal.title} (${goal.status})`).join('; ') || 'No current goals'}`,
+      'Use: Lifestyle trend review only. This report is not a diagnosis or medical recommendation.',
+    ];
+    const blob = new Blob([reportLines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `wellpath-${selectedPatient.patient_id}-trend-summary.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setReportStatus('Report downloaded.');
   };
 
-  // Mark an alert resolved and drop it from the current view without a refetch.
-  const resolveAlert = async (alertId) => {
-    setResolvingIds((ids) => [...ids, alertId]);
+  const reviewSignalPatient = async (patientId) => {
+    const patient = patients.find((item) => item.patient_id === Number(patientId));
+    if (!patient) return;
+    await loadPatient(patient);
+    setActiveTab('Trends');
+  };
+
+  const updateSignalRecord = async (signalId, updates) => {
+    setSavingAction(`signal-${signalId}`);
+    setActionStatus('');
     try {
-      await api.resolveAlert(alertId);
-      setSelectedPatient((current) => {
-        if (!current?.details) return current;
-        return {
-          ...current,
-          details: {
-            ...current.details,
-            alerts: current.details.alerts.filter((a) => a.alert_id !== alertId),
-          },
-        };
-      });
-    } catch (err) {
-      console.error('Failed to resolve alert:', err);
+      const saved = await api.updateSignal(signalId, updates);
+      setSignals((items) => items.map((signal) => signal.alert_id === saved.alert_id ? saved : signal));
+      setActionStatus('Review signal updated.');
+      return saved;
+    } catch (actionError) {
+      setActionStatus(actionError.message || 'The review signal could not be updated.');
+      return null;
     } finally {
-      setResolvingIds((ids) => ids.filter((id) => id !== alertId));
+      setSavingAction('');
     }
   };
 
-  const providerTabs = ['Overview', 'Signals', 'Reports'];
+  const addSecureNote = async (payload) => {
+    if (!selectedPatient) return null;
+    setSavingAction('note');
+    setActionStatus('');
+    try {
+      const saved = await api.addClinicianNote(selectedPatient.patient_id, payload);
+      setNotes((items) => [saved, ...items]);
+      setActionStatus('Secure review note saved.');
+      return saved;
+    } catch (actionError) {
+      setActionStatus(actionError.message || 'The note could not be saved.');
+      return null;
+    } finally {
+      setSavingAction('');
+    }
+  };
+
+  const saveCarePlan = async (event) => {
+    event.preventDefault();
+    if (!selectedPatient || !carePlanForm) return;
+    setSavingAction('care-plan');
+    setActionStatus('');
+    try {
+      const saved = await api.updateCarePlan(selectedPatient.patient_id, carePlanForm);
+      setCarePlan(saved);
+      setCarePlanForm(saved);
+      setActionStatus('Lifestyle follow-up plan saved.');
+    } catch (actionError) {
+      setActionStatus(actionError.message || 'The follow-up plan could not be saved.');
+    } finally {
+      setSavingAction('');
+    }
+  };
 
   if (loading) {
+    return <div className="provider-shell"><div className="loading-center" role="status">Loading clinician workspace...</div></div>;
+  }
+
+  if (error && !selectedPatient) {
     return (
-      <div className="provider-shell">
-        <div className="loading-center">Loading patients...</div>
+      <div className="provider-shell single-state">
+        <section className="state-panel" role="alert">
+          <Stethoscope size={30} />
+          <h2>We could not load the clinician workspace</h2>
+          <p>{error}</p>
+          <button className="primary-btn" type="button" onClick={fetchPatients}>Try again</button>
+        </section>
       </div>
     );
   }
 
-  const profile = selectedPatient?.details?.profile || {};
-  const health = selectedPatient?.details?.health || {};
-  // Reports: keep recorded KPIs, but not the derived score/risk predictors
-  // (Health Score, Risk Score, Recovery Score, etc.).
-  const rawKpis = (selectedPatient?.details?.kpis || [])
-    .filter((k) => !/score|risk/i.test(k.kpi_name));
-
-  const vitals = [
-    { icon: HeartPulse, label: 'Resting HR', value: fmtUnit(health.resting_heart_rate, 'bpm', roundNum) },
-    {
-      icon: Droplets, label: 'Blood pressure',
-      value: (health.systolic_bp && health.diastolic_bp) ? `${roundNum(health.systolic_bp)}/${roundNum(health.diastolic_bp)} mmHg` : '—',
-    },
-    { icon: Footprints, label: 'Steps', value: fmtNum(health.steps) },
-    { icon: Moon, label: 'Sleep', value: fmtUnit(health.sleep_hours, 'hrs', oneDpNum) },
-    { icon: Activity, label: 'Exercise', value: fmtUnit(health.exercise_minutes, 'min', roundNum) },
-    { icon: Scale, label: 'Weight', value: fmtUnit(profile.weight_lbs, 'lb', roundNum) },
-    { icon: Ruler, label: 'Height', value: profile.height_inches ? heightText(profile.height_inches) : '—' },
-  ];
-
   return (
     <div className="provider-shell">
-      <aside className="provider-nav">
-        <div className="provider-logo"><Stethoscope size={23} /> WellPath</div>
-        {providerTabs.map((item) => (
-          <button key={item} className={activeTab === item ? 'active' : ''} onClick={() => setActiveTab(item)}>
-            {item}
-          </button>
-        ))}
-        <button className="logout-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+      <aside className="provider-nav" aria-label="Clinician sections">
+        <div className="provider-logo"><span><Stethoscope size={21} /></span><div><strong>WellPath</strong><small>Clinical review</small></div></div>
+        {providerTabs.map((tab) => {
+          const TabIcon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              className={activeTab === tab.id ? 'active' : ''}
+              onClick={() => setActiveTab(tab.id)}
+              aria-current={activeTab === tab.id ? 'page' : undefined}
+              aria-label={tab.id}
+              title={tab.id}
+            >
+              <TabIcon size={17} aria-hidden="true" />
+              <span>{tab.id}</span>
+              {tab.id === 'Signals' && openSignalCount > 0 && <em aria-hidden="true">{openSignalCount}</em>}
+            </button>
+          );
+        })}
+        <div className="provider-nav-spacer" />
+        <button className="provider-account-action" type="button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
         </button>
-        <button className="logout-btn" onClick={onLogout}>
-          <LogOut size={16} /> Sign Out
-        </button>
+        <button className="provider-account-action" type="button" onClick={onLogout}><LogOut size={16} /><span>Sign out</span></button>
       </aside>
 
-      <section className="provider-main">
-        <div className="provider-top">
+      <main className="provider-main" aria-busy={detailLoading}>
+        <header className="provider-top">
           <div>
-            <h1>Clinician Dashboard <span className="provider-tab-label">· {activeTab}</span></h1>
-            <p>Welcome, {user?.name}</p>
+            <h1>{activeTab === 'Overview' ? 'Clinician Trend Review' : activeTab}</h1>
+            <p>{activeTabInfo.description}</p>
           </div>
-        </div>
+          <div className="provider-actions">
+            <div className="provider-review-context"><UserCheck size={17} /><div><span>Reviewing</span><strong>{selectedPatient?.full_name || 'No patient selected'}</strong></div></div>
+            <button type="button" onClick={() => setActiveTab('Patients')}><Users size={16} /> Patient list</button>
+            <button type="button" onClick={() => setActiveTab('Signals')}><ShieldAlert size={16} /> Signals</button>
+          </div>
+        </header>
 
         <div className="schema-banner">
-          <Users size={18} />
-          <span>{patients.length} patients under your care</span>
+          <CheckCircle2 size={18} />
+          <span>{patients.length} shared patient records. Lifestyle trend support only, not diagnosis.</span>
+          {selectedHealth?.record_date && <em><Clock3 size={14} /> Updated {formatReviewDate(selectedHealth.record_date)}</em>}
         </div>
+        {detailLoading && <p className="form-feedback" role="status">Updating patient information...</p>}
+        {error && <p className="error-message" role="alert">{error}</p>}
+        {actionStatus && <p className="provider-action-status" role="status">{actionStatus}</p>}
 
-        <div className="provider-grid">
-          <div className="panel">
-            <h3>Patient List</h3>
-            {patients.map((patient) => (
-              <button
-                key={patient.patient_id}
-                className={`patient-row ${selectedPatient?.patient_id === patient.patient_id ? 'selected' : ''}`}
-                onClick={() => selectPatient(patient)}
-              >
-                <div className="avatar small">
-                  {patient.full_name.split(' ').map(p => p[0]).join('')}
-                </div>
-                <div>
-                  <strong>{patient.full_name}</strong>
-                  <span>{patient.primary_focus || 'General wellness'}</span>
-                </div>
+        {activeTab === 'Overview' && (
+          <OverviewTab
+            patients={patients}
+            selectedPatient={selectedPatient}
+            selectedHealth={selectedHealth}
+            signals={signals}
+            averages={averages}
+            onSelectPatient={loadPatient}
+            onOpenTab={setActiveTab}
+            carePlan={carePlan}
+          />
+        )}
+        {activeTab === 'Patients' && (
+          <PatientsTab
+            patients={filteredPatients}
+            selectedPatient={selectedPatient}
+            selectedHealth={selectedHealth}
+            query={query}
+            setQuery={setQuery}
+            onSelectPatient={loadPatient}
+            notes={notes}
+            onAddNote={addSecureNote}
+            saving={savingAction === 'note'}
+          />
+        )}
+        {activeTab === 'Trends' && (
+          <TrendsTab
+            trends={visibleTrends}
+            allTrends={trends}
+            range={trendRange}
+            setRange={setTrendRange}
+            health={selectedHealth}
+            patient={selectedPatient}
+          />
+        )}
+        {activeTab === 'Signals' && <SignalsTab signals={signals} patients={patients} onReviewPatient={reviewSignalPatient} onUpdateSignal={updateSignalRecord} savingAction={savingAction} clinicianName={user?.name} />}
+        {activeTab === 'Plans' && <PlansTab goals={goals} patient={selectedPatient} health={selectedHealth} carePlan={carePlan} carePlanForm={carePlanForm} setCarePlanForm={setCarePlanForm} onSave={saveCarePlan} saving={savingAction === 'care-plan'} />}
+        {activeTab === 'Reports' && (
+          <ReportsTab patient={selectedPatient} health={selectedHealth} goals={goals} onExport={exportReport} status={reportStatus} auditEvents={auditEvents} />
+        )}
+      </main>
+    </div>
+  );
+}
+
+function OverviewTab({ patients, selectedPatient, selectedHealth, signals, averages, onSelectPatient, onOpenTab, carePlan }) {
+  const openSignals = signals.filter((signal) => signal.status !== 'resolved');
+  const unassignedSignals = openSignals.filter((signal) => !signal.assigned_to);
+  return (
+    <>
+      <div className="provider-metrics">
+        <MetricSummary icon={Users} label="Patients" value={patients.length} detail="shared records" />
+        <MetricSummary icon={Activity} label="Average score" value={averages.score} detail="lifestyle summary" />
+        <MetricSummary icon={ShieldAlert} label="Open reviews" value={openSignals.length} detail="non-diagnostic queue" tone="coral" />
+        <MetricSummary icon={UserCheck} label="Unassigned" value={unassignedSignals.length} detail="needs an owner" tone="blue" />
+      </div>
+      <div className="provider-grid overview-grid">
+        <Panel title="Patient overview">
+          <PatientList patients={patients.slice(0, 5)} selectedPatient={selectedPatient} onSelectPatient={onSelectPatient} />
+          <button className="text-action" type="button" onClick={() => onOpenTab('Patients')}>Open patient directory</button>
+        </Panel>
+        <Panel title={selectedPatient ? selectedPatient.full_name : 'Selected patient'} wide>
+          <ProfileSummary patient={selectedPatient} health={selectedHealth} />
+        </Panel>
+        <Panel title="Recommendation summary">
+          <p className="panel-note">{recommendationFor(selectedHealth)}</p>
+          <SummaryLine label="Plan status" value={carePlan?.status || 'Not set'} />
+          <SummaryLine label="Next review" value={carePlan?.review_date ? formatReviewDate(carePlan.review_date) : 'Not scheduled'} />
+          <button className="text-action" type="button" onClick={() => onOpenTab('Plans')}>Review goals and plans</button>
+        </Panel>
+      </div>
+    </>
+  );
+}
+
+function PatientsTab({ patients, selectedPatient, selectedHealth, query, setQuery, onSelectPatient, notes, onAddNote, saving }) {
+  return (
+    <div className="provider-grid patients-grid">
+      <Panel title="Patient directory">
+        <label className="search-field">
+          <Search size={16} />
+          <span className="sr-only">Search patients</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, focus, or level" />
+        </label>
+        <PatientList patients={patients} selectedPatient={selectedPatient} onSelectPatient={onSelectPatient} />
+        {!patients.length && <p className="empty-state">No patients match that search.</p>}
+      </Panel>
+      <Panel title="Shared patient profile" wide>
+        <ProfileSummary patient={selectedPatient} health={selectedHealth} />
+        <ClinicianNotes notes={notes} onAddNote={onAddNote} saving={saving} />
+      </Panel>
+    </div>
+  );
+}
+
+function TrendsTab({ trends, allTrends, range, setRange, health, patient }) {
+  const trendMetrics = [
+    { id: 'steps', key: 'steps', label: 'Steps', value: health?.steps, unit: 'steps', color: 'var(--teal)' },
+    { id: 'sleep', key: 'sleep', label: 'Sleep', value: health?.sleep_hours, unit: 'hrs', color: 'var(--blue)' },
+    { id: 'hr', key: 'hr', label: 'Resting heart rate', value: health?.resting_heart_rate, unit: 'bpm', color: 'var(--coral)' },
+    { id: 'exercise', key: 'exercise', label: 'Exercise', value: health?.exercise_minutes, unit: 'min', color: 'var(--green)' },
+  ];
+  return (
+    <div className="provider-grid trends-grid">
+      <Panel title={`${patient?.full_name || 'Patient'}: trend review`} wide>
+        <div className="trend-review-toolbar">
+          <div className="range-control" aria-label="Trend review period">
+            {[7, 14, 30].map((days) => (
+              <button key={days} type="button" className={range === days ? 'active' : ''} onClick={() => setRange(days)} aria-pressed={range === days}>
+                {days} days
               </button>
             ))}
           </div>
-
-          {selectedPatient && (
-            <div className="panel wide">
-              <h3>Patient Profile: {selectedPatient.full_name}</h3>
-              <div className="workout-list">
-                <div>
-                  <strong>Primary Focus</strong>
-                  <span>{selectedPatient.primary_focus || 'None'}</span>
-                </div>
-                <div>
-                  <strong>Age</strong>
-                  <span>{profile.age ? roundNum(profile.age) : '—'}</span>
-                </div>
-                <div>
-                  <strong>Sex</strong>
-                  <span>{profile.gender || '—'}</span>
-                </div>
-                <div>
-                  <strong>Consent</strong>
-                  <span>{selectedPatient.consent_status ? 'Granted' : 'Pending'}</span>
-                </div>
-              </div>
-
-              <h4>Latest vitals</h4>
-              <div className="clin-vitals">
-                {vitals.map((v) => (
-                  <div className="clin-vital" key={v.label}>
-                    <span className="clin-vital-icon"><v.icon size={15} /></span>
-                    <span className="clin-vital-label">{v.label}</span>
-                    <strong className="clin-vital-value">{v.value}</strong>
-                  </div>
-                ))}
-              </div>
-
-              {activeTab === 'Overview' && selectedPatient.details?.health && (
-                <div>
-                  <h4>14-day trends</h4>
-                  <div className="clin-trend-grid">
-                    <ClinTrend icon={Footprints} label="Steps" color="var(--wellpath-accent)"
-                      trends={selectedPatient.details.trends} field="steps" format={fmtNum} />
-                    <ClinTrend icon={HeartPulse} label="Resting HR" color="#f0805a" unit="bpm"
-                      trends={selectedPatient.details.trends} field="resting_heart_rate" format={roundNum} />
-                    <ClinTrend icon={Moon} label="Sleep" color="#8b5cf6" unit="hrs"
-                      trends={selectedPatient.details.trends} field="sleep_hours" format={oneDpNum} />
-                    <ClinTrend icon={Droplets} label="Systolic BP" color="#e0596b" unit="mmHg"
-                      trends={selectedPatient.details.trends} field="systolic_bp" format={roundNum} />
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'Signals' && (selectedPatient.details?.alerts?.length > 0 ? (
-                <div>
-                  <h4>Open alerts <span className="clin-alert-count">{selectedPatient.details.alerts.length}</span></h4>
-                  <div className="clin-alert-list">
-                    {selectedPatient.details.alerts.map((alert) => (
-                      <div key={alert.alert_id} className={`clin-alert-row level-${alert.alert_level}`}>
-                        <span className="clin-alert-dot" />
-                        <div className="clin-alert-body">
-                          <div className="clin-alert-top">
-                            <strong>{alert.alert_type}</strong>
-                            <em className={`severity ${alert.alert_level}`}>{alert.alert_level}</em>
-                          </div>
-                          {alert.alert_message && <p>{alert.alert_message}</p>}
-                        </div>
-                        <button
-                          type="button"
-                          className="clin-alert-resolve"
-                          onClick={() => resolveAlert(alert.alert_id)}
-                          disabled={resolvingIds.includes(alert.alert_id)}
-                          title="Mark resolved"
-                        >
-                          {resolvingIds.includes(alert.alert_id) ? <RefreshCw size={14} className="spinning" /> : <Check size={14} />}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="provider-empty">No open alerts for this patient.</p>
-              ))}
-
-              {activeTab === 'Reports' && (rawKpis.length > 0 ? (
-                <div>
-                  <h4>KPI Values</h4>
-                  <div className="workout-list">
-                    {rawKpis.map((kpi) => (
-                      <div key={kpi.kpi_name}>
-                        <strong>{kpi.kpi_name}</strong>
-                        <span>{[kpi.numeric_value, kpi.text_value].filter((x) => x != null && x !== '').join(' · ') || '—'}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="provider-empty">No recorded KPI values for this patient.</p>
-              ))}
-            </div>
-          )}
+          <span><CalendarDays size={15} /> {trends.length} synced days shown</span>
         </div>
-      </section>
+        <div className="provider-trend-grid">
+          {trendMetrics.map((metric) => {
+            const comparison = compareTrendPeriods(allTrends, metric.key, range, metric.id);
+            return (
+              <article className="provider-trend-card" key={metric.id}>
+                <span>{metric.label}</span>
+                <strong>{metric.value ?? 'N/A'} <small>{metric.unit}</small></strong>
+                <Sparkline data={trends.map((day) => day[metric.key])} color={metric.color} />
+                <p className={comparison.tone ? `trend-comparison ${comparison.tone}` : 'trend-comparison'}>{comparison.label}</p>
+              </article>
+            );
+          })}
+        </div>
+      </Panel>
+      <Panel title="Trend interpretation">
+        <SummaryLine label="Review period" value={`${trends.length} days`} />
+        <SummaryLine label="Primary focus" value={patient?.primary_focus || 'Not set'} />
+        <SummaryLine label="Latest sync" value={health?.record_date ? formatReviewDate(health.record_date) : 'Not available'} />
+        <p className="panel-note">Use changes over time to guide a conversation. One reading should not be treated as a diagnosis.</p>
+      </Panel>
     </div>
   );
 }
 
-// A labelled 14-day trend row: icon, name, sparkline, and the latest value.
-function ClinTrend({ icon: Icon, label, color, unit, trends, field, format }) {
-  const values = (trends || []).map((d) => d[field]);
-  const nums = values.map(Number).filter((v) => Number.isFinite(v));
-  const latest = nums.length ? nums[nums.length - 1] : null;
+function SignalsTab({ signals, patients, onReviewPatient, onUpdateSignal, savingAction, clinicianName }) {
+  const [level, setLevel] = useState('all');
+  const [status, setStatus] = useState('active');
+  const visibleSignals = signals.filter((signal) => {
+    const levelMatches = level === 'all' || String(signal.alert_level).toLowerCase() === level;
+    const statusMatches = status === 'all'
+      || (status === 'active' ? signal.status !== 'resolved' : signal.status === status);
+    return levelMatches && statusMatches;
+  });
+
   return (
-    <div className="clin-trend-row">
-      <span className="clin-trend-icon" style={{ color }}><Icon size={15} /></span>
-      <span className="clin-trend-label">{label}</span>
-      <Sparkline values={values} color={color} width={110} height={30} />
-      <span className="clin-trend-latest">
-        <strong>{latest != null && format ? format(latest) : latest ?? '—'}</strong>
-        {unit && <em>{unit}</em>}
-      </span>
+    <div className="provider-grid signals-grid">
+      <Panel title="Review queue" wide>
+        <div className="signal-filter-row" aria-label="Filter review signals">
+          {['all', 'high', 'medium', 'low'].map((filter) => (
+            <button key={filter} type="button" className={level === filter ? 'active' : ''} onClick={() => setLevel(filter)} aria-pressed={level === filter}>
+              {filter === 'all' ? `All (${signals.length})` : filter}
+            </button>
+          ))}
+        </div>
+        <div className="signal-filter-row status-filters" aria-label="Filter review status">
+          {['active', 'open', 'in_review', 'resolved', 'all'].map((filter) => (
+            <button key={filter} type="button" className={status === filter ? 'active' : ''} onClick={() => setStatus(filter)} aria-pressed={status === filter}>
+              {filter === 'in_review' ? 'In review' : filter[0].toUpperCase() + filter.slice(1)}
+            </button>
+          ))}
+        </div>
+        {visibleSignals.map((signal) => {
+          const patient = patients.find((item) => item.patient_id === Number(signal.patient_id));
+          return (
+            <article className="signal-row" key={signal.alert_id}>
+              <ShieldAlert size={18} />
+              <div>
+                <strong>{signal.full_name || patient?.full_name || 'Patient'}: {signal.alert_type}</strong>
+                <p>{signal.alert_message}</p>
+                <small>{signal.alert_date ? formatReviewDate(signal.alert_date) : 'Date not available'} - {signal.assigned_name ? `Owned by ${signal.assigned_name}` : 'Unassigned'}</small>
+              </div>
+              <div className="signal-actions">
+                <span className={`risk ${signal.alert_level}`}>{signal.alert_level} review</span>
+                <span className={`signal-status ${signal.status}`}>{signal.status === 'in_review' ? 'in review' : signal.status}</span>
+                {!signal.assigned_to && <button type="button" onClick={() => onUpdateSignal(signal.alert_id, { assigned_to: 'me', status: 'in_review' })} disabled={savingAction === `signal-${signal.alert_id}`}>Assign to me</button>}
+                {signal.assigned_to && signal.status === 'open' && <button type="button" onClick={() => onUpdateSignal(signal.alert_id, { status: 'in_review' })} disabled={savingAction === `signal-${signal.alert_id}`}>Start review</button>}
+                {signal.status !== 'resolved' && <button type="button" onClick={() => onUpdateSignal(signal.alert_id, { status: 'resolved' })} disabled={savingAction === `signal-${signal.alert_id}`}>Resolve</button>}
+                {signal.status === 'resolved' && <button type="button" onClick={() => onUpdateSignal(signal.alert_id, { status: 'open' })} disabled={savingAction === `signal-${signal.alert_id}`}>Reopen</button>}
+                <button type="button" onClick={() => onReviewPatient(signal.patient_id ?? patient?.patient_id)} disabled={!signal.patient_id && !patient}>Review trend</button>
+              </div>
+            </article>
+          );
+        })}
+        {!visibleSignals.length && <p className="empty-state">No review signals match these filters.</p>}
+      </Panel>
+      <Panel title="How to use signals">
+        <p className="panel-note">Signals highlight patterns that may be worth discussing. They do not identify a condition or replace clinical judgment.</p>
+        <SummaryLine label="Current clinician" value={clinicianName || 'Signed-in clinician'} />
+        <SummaryLine label="Open queue" value={`${signals.filter((signal) => signal.status !== 'resolved').length} reviews`} />
+        <SummaryLine label="Unassigned" value={`${signals.filter((signal) => !signal.assigned_to && signal.status !== 'resolved').length} reviews`} />
+      </Panel>
     </div>
   );
 }
 
-const fmtNum = (v) => (Number.isFinite(Number(v)) ? Number(v).toLocaleString() : '—');
-const roundNum = (v) => (Number.isFinite(Number(v)) ? Math.round(Number(v)) : '—');
-const oneDpNum = (v) => (Number.isFinite(Number(v)) ? Number(v).toFixed(1) : '—');
-const fmtUnit = (v, unit, format) => (Number.isFinite(Number(v)) ? `${format(v)} ${unit}` : '—');
-const heightText = (inches) => `${Math.floor(inches / 12)}′${Math.round(inches % 12)}″`;
+function PlansTab({ goals, patient, health, carePlan, carePlanForm, setCarePlanForm, onSave, saving }) {
+  return (
+    <div className="provider-grid plans-grid">
+      <Panel title="Patient goals" wide>
+        {goals.map((goal) => (
+          <div className="goal-row" key={goal.id}><CheckCircle2 size={17} /><span>{goal.title}</span><em>{goal.status}</em></div>
+        ))}
+        {!goals.length && <p className="empty-state">No patient goals are available.</p>}
+      </Panel>
+      <Panel title="Lifestyle follow-up plan">
+        {carePlanForm ? (
+          <form className="care-plan-form" onSubmit={onSave}>
+            <label><span>Shared focus</span><input value={carePlanForm.focus || ''} onChange={(event) => setCarePlanForm({ ...carePlanForm, focus: event.target.value })} maxLength="180" required /></label>
+            <label><span>Plain-language recommendation</span><textarea value={carePlanForm.recommendation || ''} onChange={(event) => setCarePlanForm({ ...carePlanForm, recommendation: event.target.value })} rows="5" maxLength="1000" required /></label>
+            <div className="care-plan-fields">
+              <label><span>Review date</span><input type="date" value={carePlanForm.review_date || ''} onChange={(event) => setCarePlanForm({ ...carePlanForm, review_date: event.target.value })} required /></label>
+              <label><span>Status</span><select value={carePlanForm.status || 'active'} onChange={(event) => setCarePlanForm({ ...carePlanForm, status: event.target.value })}><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></label>
+            </div>
+            <button className="secondary-btn care-plan-save" type="submit" disabled={saving}><Save size={16} /> {saving ? 'Saving...' : 'Save follow-up plan'}</button>
+          </form>
+        ) : <p className="empty-state">No follow-up plan is available.</p>}
+      </Panel>
+      <Panel title="Communication guidance">
+        <ClipboardList size={22} />
+        <p className="panel-note">Use manageable next steps, recognize returning after a break, and avoid pressure around missed days.</p>
+        <SummaryLine label="Patient focus" value={patient?.primary_focus || 'Not set'} />
+        <SummaryLine label="Current recommendation" value={carePlan?.recommendation || recommendationFor(health)} />
+        <div className="provider-boundary-note"><ShieldAlert size={16} /><p>Recommendations here support a lifestyle conversation. They do not automatically diagnose, prescribe, or change the patient&apos;s medical care.</p></div>
+      </Panel>
+    </div>
+  );
+}
+
+function ReportsTab({ patient, health, goals, onExport, status, auditEvents }) {
+  return (
+    <div className="provider-grid reports-grid">
+      <Panel title="Report preview" wide>
+        <SummaryLine label="Patient" value={patient?.full_name || 'Not selected'} />
+        <SummaryLine label="Includes" value="Steps, sleep, heart rate, exercise, goals" />
+        <SummaryLine label="Purpose" value="Lifestyle trend conversation" />
+        <SummaryLine label="Safety label" value="Non-diagnostic" />
+      </Panel>
+      <Panel title="Export report">
+        <FileText size={24} />
+        <p className="panel-note">Download a text summary for the selected patient. The report contains only the sample information shown in this workspace.</p>
+        <button className="secondary-btn report-export-btn" type="button" onClick={onExport} disabled={!patient}>
+          <Download size={16} /> Download trend summary
+        </button>
+        {status && <p className="form-feedback" role="status">{status}</p>}
+      </Panel>
+      <Panel title="Current snapshot">
+        <SummaryLine label="Steps" value={health?.steps?.toLocaleString() || 'N/A'} />
+        <SummaryLine label="Sleep" value={health?.sleep_hours ? `${health.sleep_hours} hrs` : 'N/A'} />
+        <SummaryLine label="Goals" value={`${goals.length} shared`} />
+      </Panel>
+      <Panel title="Recent access and workflow log" wide>
+        <div className="audit-list">
+          {auditEvents.slice(0, 12).map((event) => (
+            <article key={event.id}>
+              <History size={16} />
+              <div><strong>{auditLabel(event.event_type)}</strong><small>{event.actor_name || event.actor_role} - {new Date(event.created_at).toLocaleString()}</small></div>
+              <span>{event.target_type}{event.target_id ? ` ${event.target_id}` : ''}</span>
+            </article>
+          ))}
+          {!auditEvents.length && <p className="empty-state">No audit events are available.</p>}
+        </div>
+        <p className="panel-note">The local audit log records access and workflow events without storing AI answers or passwords.</p>
+      </Panel>
+    </div>
+  );
+}
+
+function ClinicianNotes({ notes, onAddNote, saving }) {
+  const [category, setCategory] = useState('Trend review');
+  const [note, setNote] = useState('');
+
+  const submitNote = async (event) => {
+    event.preventDefault();
+    if (!note.trim()) return;
+    const saved = await onAddNote({ category, note: note.trim() });
+    if (saved) setNote('');
+  };
+
+  return (
+    <section className="clinician-notes-section">
+      <div className="clinician-notes-heading"><div><Lock size={16} /><strong>Secure clinician notes</strong></div><span>Clinician only</span></div>
+      <form className="clinician-note-form" onSubmit={submitNote}>
+        <label><span>Category</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option>Trend review</option><option>Follow-up</option><option>Care coordination</option><option>Patient question</option></select></label>
+        <label><span>Note</span><textarea value={note} onChange={(event) => setNote(event.target.value)} rows="4" maxLength="2000" placeholder="Record the review context and agreed follow-up" /></label>
+        <div><small>{note.length}/2000</small><button className="secondary-btn" type="submit" disabled={saving || !note.trim()}><Save size={15} /> {saving ? 'Saving...' : 'Save secure note'}</button></div>
+      </form>
+      <div className="clinician-note-list">
+        {notes.map((entry) => (
+          <article key={entry.id}><div><strong>{entry.category}</strong><span>{entry.author_name} - {new Date(entry.created_at).toLocaleString()}</span></div><p>{entry.note}</p></article>
+        ))}
+        {!notes.length && <p className="empty-state">No clinician notes for this patient yet.</p>}
+      </div>
+    </section>
+  );
+}
+
+function Panel({ title, wide = false, children }) {
+  return <section className={`panel ${wide ? 'wide' : ''}`}><h3>{title}</h3>{children}</section>;
+}
+
+function MetricSummary({ icon: Icon, label, value, detail, tone = '' }) {
+  return (
+    <article className={`provider-metric-card ${tone}`}>
+      <Icon size={18} />
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </article>
+  );
+}
+
+function PatientList({ patients, selectedPatient, onSelectPatient }) {
+  return (
+    <div className="patient-list">
+      {patients.map((patient) => (
+        <button
+          key={patient.patient_id}
+          type="button"
+          className={`patient-row ${selectedPatient?.patient_id === patient.patient_id ? 'selected' : ''}`}
+          onClick={() => onSelectPatient(patient)}
+          aria-pressed={selectedPatient?.patient_id === patient.patient_id}
+        >
+          <div className="avatar small">{patient.full_name.split(' ').map((part) => part[0]).join('').slice(0, 3)}</div>
+          <div><strong>{patient.full_name}</strong><span>{patient.primary_focus}</span></div>
+          <em className={`risk ${(patient.riskLevel || '').toLowerCase()}`}>{patient.riskLevel || 'Unknown'} review</em>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ProfileSummary({ patient, health }) {
+  if (!patient) return <p className="empty-state">Select a patient to review their shared profile.</p>;
+  return (
+    <div className="profile-summary">
+      <div className="profile-card">
+        <div className="avatar">{patient.full_name.split(' ').map((part) => part[0]).join('').slice(0, 3)}</div>
+        <div><h4>{patient.full_name}</h4><p>{patient.primary_focus}</p></div>
+      </div>
+      <div className="workout-list">
+        <SummaryLine label="Lifestyle score" value={patient.healthScore || 'N/A'} />
+        <SummaryLine label="Lifestyle review level" value={patient.riskLevel || 'N/A'} />
+        <SummaryLine label="Consent" value={patient.consent_status ? 'Granted' : 'Pending'} />
+        <SummaryLine label="Age" value={(patient.details?.profile?.age || health?.age) ? `${patient.details?.profile?.age || health.age} years` : 'Not shared'} />
+        <SummaryLine label="Latest sync" value={health?.record_date ? formatReviewDate(health.record_date) : 'Not available'} />
+        <SummaryLine label="Steps" value={health?.steps?.toLocaleString() || 'N/A'} />
+        <SummaryLine label="Sleep" value={health?.sleep_hours ? `${health.sleep_hours} hrs` : 'N/A'} />
+        <SummaryLine label="Resting heart rate" value={health?.resting_heart_rate ? `${health.resting_heart_rate} bpm` : 'N/A'} />
+        <SummaryLine label="Exercise" value={health?.exercise_minutes ? `${health.exercise_minutes} min` : 'N/A'} />
+      </div>
+    </div>
+  );
+}
+
+function SummaryLine({ label, value }) {
+  return <div className="summary-line"><strong>{label}</strong><span>{value}</span></div>;
+}
+
+function formatReviewDate(value) {
+  const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function auditLabel(eventType) {
+  return String(eventType || 'event')
+    .split('_')
+    .map((word) => word[0]?.toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function compareTrendPeriods(history, key, range, metricId) {
+  const values = history
+    .map((row) => Number(row?.[key]))
+    .filter(Number.isFinite);
+  if (values.length < range + 2) return { label: 'No earlier period available', tone: '' };
+
+  const current = values.slice(-range);
+  const previous = values.slice(-(range * 2), -range);
+  if (!previous.length) return { label: 'No earlier period available', tone: '' };
+
+  const mean = (items) => items.reduce((sum, value) => sum + value, 0) / items.length;
+  const delta = mean(current) - mean(previous);
+  const nearFlat = Math.abs(delta) < (metricId === 'steps' ? 100 : 0.15);
+  if (nearFlat) return { label: 'Similar to the prior period', tone: '' };
+
+  const formatted = metricId === 'steps'
+    ? `${Math.abs(Math.round(delta)).toLocaleString()} steps`
+    : `${Math.abs(delta).toFixed(1)} ${metricId === 'sleep' ? 'hrs' : metricId === 'hr' ? 'bpm' : 'min'}`;
+  const direction = delta > 0 ? 'higher' : 'lower';
+  const tone = metricId === 'hr' ? '' : delta > 0 ? 'good' : 'watch';
+  return { label: `${formatted} ${direction} than the prior period`, tone };
+}
+
+function recommendationFor(health) {
+  if (!health) return 'Select a patient to review a relevant lifestyle next step.';
+  if (Number(health.sleep_hours) < 7) return 'Protect a steady sleep window and review the pattern again after several nights.';
+  if (Number(health.steps) < 8000) return 'Consider one repeatable walking window rather than a large one-day step increase.';
+  return 'Recent activity and sleep are steady. Support the routine with one manageable next step.';
+}
 
 export default ClinicianView;

@@ -16,6 +16,18 @@ function AuthPage({ onLogin, theme, setTheme }) {
     { id: 'trainer', title: 'Trainer', detail: 'Support view for activity and recovery.', icon: Users },
     { id: 'clinician', title: 'Clinician', detail: 'Separate trend review dashboard.', icon: Stethoscope },
   ];
+  const roleCredentials = {
+    patient: 'alex@example.com',
+    trainer: 'jordan@example.com',
+    clinician: 'rivera@example.com',
+  };
+
+  const selectRole = (role) => {
+    setSelectedRole(role);
+    setEmail(roleCredentials[role]);
+    setPassword('password123');
+    setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,6 +76,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
             className="logout-btn" 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             type="button"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             {theme === 'dark' ? 'Light' : 'Dark'}
@@ -75,7 +88,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
             <button
               key={id}
               className={selectedRole === id ? 'selected' : ''}
-              onClick={() => setSelectedRole(id)}
+              onClick={() => selectRole(id)}
               type="button"
             >
               <Icon size={18} />
@@ -94,7 +107,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
+              placeholder="Email or username"
               required
             />
           </label>
@@ -113,7 +126,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
           {error && <div className="error-message">{error}</div>}
 
           <button className="primary-btn" type="submit" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : `Enter ${roleOptions.find(r => r.id === selectedRole)?.title || 'App'} View`}
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
