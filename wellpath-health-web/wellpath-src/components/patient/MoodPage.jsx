@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Sparkles, SmilePlus, ShieldCheck } from 'lucide-react';
+import { SmilePlus, ShieldCheck, Sparkles } from 'lucide-react';
 import { api } from '../../api';
+import { AiInsightBox } from './AiInsightBox.jsx';
 
 const MOOD_OPTIONS = [
   { value: 1, emoji: '😞', label: 'Rough' },
@@ -64,8 +65,6 @@ export function MoodPage({ patientId, healthLog = [], aiEnabled, onGenerateAiIns
   const [todayMood, setTodayMood] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveNote, setSaveNote] = useState('');
-  const [aiText, setAiText] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -104,27 +103,19 @@ export function MoodPage({ patientId, healthLog = [], aiEnabled, onGenerateAiIns
     }
   };
 
-  const askAiAboutMood = async () => {
-    if (!aiEnabled || !onGenerateAiInsight || aiLoading) return;
-    setAiLoading(true);
-    setAiText(null);
-    try {
-      const text = await onGenerateAiInsight({
-        insightType: 'mood',
-        targetId: 'mood',
-        targetTitle: 'Mood drivers',
-        targetContext: {
-          recentMoods: moodLog.slice(-14).map((m) => ({ date: dateKey(m.date), mood: m.mood })),
-          averageMood: avgMood != null ? Math.round(avgMood * 10) / 10 : null,
-          correlations: drivers.map((d) => ({ factor: d.label, r: Math.round(d.r * 100) / 100, strength: d.strength })),
-        },
-      });
-      setAiText(text);
-    } catch (error) {
-      setAiText("I'm having trouble analyzing your mood right now. Please try again later.");
-    } finally {
-      setAiLoading(false);
-    }
+  const askMood = async (question) => {
+    if (!onGenerateAiInsight) throw new Error('AI unavailable');
+    return onGenerateAiInsight({
+      insightType: 'mood',
+      targetId: 'mood',
+      targetTitle: 'Mood drivers',
+      targetContext: {
+        userQuestion: question,
+        recentMoods: moodLog.slice(-14).map((m) => ({ date: dateKey(m.date), mood: m.mood })),
+        averageMood: avgMood != null ? Math.round(avgMood * 10) / 10 : null,
+        correlations: drivers.map((d) => ({ factor: d.label, r: Math.round(d.r * 100) / 100, strength: d.strength })),
+      },
+    });
   };
 
   return (
@@ -192,24 +183,19 @@ export function MoodPage({ patientId, healthLog = [], aiEnabled, onGenerateAiIns
         )}
       </section>
 
-      <section className="score-ai-insight mood-ai-card">
-        <span className="score-ai-icon"><Sparkles size={22} /></span>
-        <div>
-          <strong>AI mood analysis</strong>
-          {aiText ? (
-            <p>{aiText}</p>
-          ) : aiLoading ? (
-            <p className="ai-loading-text">Looking at your mood and health patterns...</p>
-          ) : (
-            <p>{aiEnabled ? 'Ask the AI what in your health data may be affecting your mood.' : 'AI is off in Settings.'}</p>
-          )}
-          {aiEnabled && !aiLoading && (
-            <button type="button" className="mood-ai-btn" onClick={askAiAboutMood}>
-              {aiText ? 'Analyze again' : 'Analyze my mood'}
-            </button>
-          )}
-        </div>
-      </section>
+      {aiEnabled && (
+        <AiInsightBox
+          title="AI mood analysis"
+          aiEnabled={aiEnabled}
+          patientId={patientId}
+          presets={[
+            { label: 'What affects my mood?', question: 'Which of my tracked health factors most seem to affect my mood?' },
+            { label: 'How can I feel better?', question: 'What is one small, realistic change that might lift my mood this week?' },
+            { label: 'Sleep vs mood', question: 'Does my sleep seem to be connected to my mood lately?' },
+          ]}
+          onAsk={(question) => askMood(question)}
+        />
+      )}
 
       <div className="quiet-disclaimer"><ShieldCheck size={15} /> Mood tracking is for self-reflection only. Not a mental-health assessment.</div>
     </div>

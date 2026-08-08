@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dna, Activity, MapPin, TrendingUp, Database, Flag, Layers } from 'lucide-react';
+import './insights.css';
 
 // ---------------------------------------------------------------------------
 // Real numbers computed from public datasets (see data-research/*.md).

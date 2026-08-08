@@ -5,6 +5,7 @@ import AuthPage from './components/AuthPage';
 import PatientView from './components/PatientView';
 import TrainerView from './components/TrainerView';
 import ClinicianView from './components/ClinicianView';
+import AdminView from './components/AdminView';
 import './styles.css';
 
 function App() {
@@ -12,9 +13,9 @@ function App() {
   const [role, setRole] = useState('patient');
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme-mode') || 'light';
-  });
+  const [theme, setTheme] = useState(() => (
+    typeof window === 'undefined' ? 'light' : localStorage.getItem('theme-mode') || 'light'
+  ));
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -93,6 +94,8 @@ function App() {
         return <TrainerView user={user} onLogout={handleLogout} theme={theme} setTheme={setTheme} />;
       case 'clinician':
         return <ClinicianView user={user} onLogout={handleLogout} theme={theme} setTheme={setTheme} />;
+      case 'dba':
+        return <AdminView user={user} onLogout={handleLogout} theme={theme} setTheme={setTheme} />;
       default:
         return <PatientView user={user} onLogout={handleLogout} theme={theme} setTheme={setTheme} />;
     }

@@ -89,6 +89,28 @@ router.post('/insights', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Patient ID required' });
     }
 
+    if (req.user.role !== 'patient') {
+      return res.status(403).json({ error: 'Patient AI Insights are only available in the patient workspace.' });
+    }
+    const [ownershipRows] = await pool.query(
+      'SELECT patient_id FROM patient_profiles WHERE patient_id = ? AND user_id = ? LIMIT 1',
+      [patientId, req.user.userId]
+    );
+    if (!ownershipRows.length) {
+      return res.status(403).json({ error: 'You can only request insights for your own data.' });
+    }
+    try {
+      const [preferenceRows] = await pool.query(
+        'SELECT ai_enabled FROM patient_app_preferences WHERE patient_id = ? LIMIT 1',
+        [patientId]
+      );
+      if (preferenceRows.length && !Boolean(preferenceRows[0].ai_enabled)) {
+        return res.status(403).json({ error: 'AI Insights are turned off for this account.' });
+      }
+    } catch (error) {
+      if (error.code !== 'ER_NO_SUCH_TABLE') throw error;
+    }
+
     // Get patient profile
     const [patientRows] = await pool.query(`
       SELECT 

@@ -18,7 +18,6 @@ export function useBubbleReveal(duration = 150) {
     }
     return () => clearTimeout(timer.current);
     // `mounted` is intentionally excluded so re-opening mid-close cancels cleanly.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, duration]);
 
   const closing = mounted && !open;

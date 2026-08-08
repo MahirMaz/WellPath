@@ -20,6 +20,9 @@ import { HealthProfileProvider } from './shared/profileContext.jsx';
 import { buildPatientScores } from '../utils/healthScores.js';
 import { buildPatientKpis, calculateRecoveryScore } from '../utils/patientKpis.js';
 import { useBubbleReveal } from '../utils/useBubbleReveal.js';
+import {
+  loadPatientUiPreferences, normalizePatientUiPreferences, savePatientUiPreferences,
+} from '../utils/patientUiPreferences.js';
 
 // ===== SAMPLE DATA (fallback) =====
 const weeklyTrend = [
@@ -32,7 +35,6 @@ const weeklyTrend = [
   { day: 'Tue', steps: 8700, sleep: 7.1, sleepConsistency: 89, hr: 72, exercise: 45, activeMinutes: 52, caloriesBurned: 2240, sedentaryHours: 6, workoutCount: 1 },
 ];
 
-const defaultSummaryMetrics = ['steps', 'sleep', 'heartRate', 'exercise', 'recovery'];
 const defaultHealthConnections = [
   { provider: 'apple_health', status: 'not_connected', permissions: [], last_sync: null },
   { provider: 'health_connect', status: 'not_connected', permissions: [], last_sync: null },
@@ -58,24 +60,24 @@ function buildSummaryMetrics(patientData, healthLog) {
 
   const aiPromptTemplates = {
     steps: [
-      { id: 'steps_change', label: 'Why did steps change?' },
-      { id: 'steps_focus', label: 'What should I focus on?' },
+      { id: 'steps_change', label: 'What shaped my steps?', question: 'What recent habit pattern may have shaped my step count, and what small action fits today?' },
+      { id: 'steps_focus', label: 'Choose one movement goal', question: 'Which one realistic movement goal best fits my recent activity pattern today?' },
     ],
     sleep: [
-      { id: 'sleep_pattern', label: 'How was my sleep?' },
-      { id: 'sleep_better', label: 'How can I improve tonight?' },
+      { id: 'sleep_pattern', label: 'Spot my sleep pattern', question: 'What simple pattern stands out in my recent sleep history?' },
+      { id: 'sleep_better', label: 'Plan tonight’s wind-down', question: 'Suggest one low-pressure wind-down step based on my recent sleep pattern.' },
     ],
     heartRate: [
-      { id: 'hr_meaning', label: 'What does this trend mean?' },
-      { id: 'hr_context', label: 'What affects this number?' },
+      { id: 'hr_meaning', label: 'Describe the recent pattern', question: 'Describe how my resting heart-rate pattern has changed without diagnosing anything.' },
+      { id: 'hr_context', label: 'Add everyday context', question: 'Which everyday habits can add context to a resting heart-rate reading?' },
     ],
     exercise: [
-      { id: 'exercise_balance', label: 'Was this enough activity?' },
-      { id: 'exercise_next', label: 'What workout fits today?' },
+      { id: 'exercise_balance', label: 'Review my activity balance', question: 'How balanced has my recent exercise routine been compared with my own goal?' },
+      { id: 'exercise_next', label: 'Pick a manageable session', question: 'Suggest one manageable activity session that fits my recent routine today.' },
     ],
     recovery: [
-      { id: 'recovery_score', label: 'Why this recovery score?' },
-      { id: 'recovery_plan', label: 'How do I recover better?' },
+      { id: 'recovery_score', label: 'What shaped recovery?', question: 'Which sleep or movement habit most influenced my recent recovery pattern?' },
+      { id: 'recovery_plan', label: 'Choose a recovery step', question: 'Suggest one gentle recovery habit that fits my recent pattern today.' },
     ],
   };
 
@@ -159,7 +161,8 @@ function buildSummaryMetrics(patientData, healthLog) {
 }
 
 function PatientView({ user, onLogout, theme, setTheme }) {
-  const [screen, setScreen] = useState('dashboard');
+  const initialUiPreferences = useMemo(() => loadPatientUiPreferences(user?.id), [user?.id]);
+  const [screen, setScreen] = useState(initialUiPreferences.startScreen);
   const [healthLog, setHealthLog] = useState(weeklyTrend);
   const [goals, setGoals] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
@@ -172,7 +175,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       return true;
     }
   });
-  const [visibleMetrics, setVisibleMetrics] = useState(defaultSummaryMetrics);
+  const [uiPreferences, setUiPreferences] = useState(initialUiPreferences);
   const [aiAnswer, setAiAnswer] = useState(null);
   const [breakdownMetric, setBreakdownMetric] = useState(null);
   const [healthConnections, setHealthConnections] = useState(defaultHealthConnections);
@@ -209,11 +212,12 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   const fetchPatientData = async () => {
     try {
       setLoading(true);
-      const [dashboard, trends, goalsData, connections] = await Promise.all([
+      const [dashboard, trends, goalsData, connections, serverPreferences] = await Promise.all([
         api.getDashboard(patientId),
         api.getTrends(patientId),
         api.getGoals(patientId),
         api.getHealthConnections(patientId).catch(() => defaultHealthConnections),
+        api.getPatientPreferences(patientId).catch(() => null),
       ]);
 
       setDashboardData(dashboard);
@@ -225,6 +229,17 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       }
       if (Array.isArray(connections)) {
         setHealthConnections(connections);
+      }
+      if (serverPreferences) {
+        const serverUi = serverPreferences.ui_preferences || serverPreferences.uiPreferences;
+        if (serverUi) {
+          const normalized = savePatientUiPreferences(user?.id, normalizePatientUiPreferences(serverUi));
+          setUiPreferences(normalized);
+          setScreen(normalized.startScreen);
+        }
+        if (typeof serverPreferences.ai_enabled === 'boolean') {
+          setAiEnabled(serverPreferences.ai_enabled);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch patient data:', error);
@@ -296,6 +311,26 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   const patientScores = useMemo(() => buildPatientScores(currentPatient, healthLog), [currentPatient, healthLog]);
   const patientKpis = useMemo(() => buildPatientKpis(currentPatient, healthLog), [currentPatient, healthLog]);
 
+  const updateUiPreferences = useCallback((updater) => {
+    setUiPreferences((current) => {
+      const nextValue = typeof updater === 'function' ? updater(current) : updater;
+      const normalized = savePatientUiPreferences(user?.id, nextValue);
+      api.updatePatientPreferences(patientId, { uiPreferences: normalized }).catch(() => {});
+      return normalized;
+    });
+  }, [patientId, user?.id]);
+
+  const updateAiEnabled = useCallback(async (enabled) => {
+    const next = Boolean(enabled);
+    setAiEnabled(next);
+    try {
+      await api.updatePatientPreferences(patientId, { aiEnabled: next });
+    } catch {
+      // The browser preference remains active when the API is unavailable.
+    }
+    return next;
+  }, [patientId]);
+
   // Cycle tracking only applies to some patients, so the tab is conditional
   // (also keeps the nav from getting crowded for everyone else).
   const tracksCycle = String(dashboardData?.gender || '').toLowerCase() === 'female';
@@ -338,8 +373,13 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     try {
       const data = await api.getAiInsight({
         patientId,
-        metricId: metric.id,
-        promptId: prompt.id,
+        insightType: 'question',
+        targetId: metric.id,
+        targetTitle: metric.label,
+        targetContext: {
+          userQuestion: prompt.question || prompt.label,
+          metric: metric.backendPayload,
+        },
       });
 
       setAiAnswer({
@@ -435,7 +475,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
 
   return (
     <HealthProfileProvider initial={initialProfile}>
-    <section className="patient-app-shell">
+    <section className={`patient-app-shell density-${uiPreferences.density}${uiPreferences.reduceMotion ? ' reduce-motion' : ''}`}>
       <PatientAppHeader patientData={currentPatient} aiEnabled={aiEnabled} />
       <div className="patient-screen-stage">
         {screen === 'dashboard' && (
@@ -451,6 +491,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
             aiAnswer={aiAnswer}
             setScreen={setScreen}
             onOpenBreakdown={openBreakdown}
+            uiPreferences={uiPreferences}
           />
         )}
         {screen === 'summary' && (
@@ -483,7 +524,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
           <AiInsightsPage
             metrics={metrics}
             aiEnabled={aiEnabled}
-            setAiEnabled={setAiEnabled}
+            setAiEnabled={updateAiEnabled}
             aiAnswer={aiAnswer}
             onAskAi={askAi}
             healthLog={healthLog}
@@ -499,6 +540,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
             aiEnabled={aiEnabled}
             onGenerateAiInsight={generateDashboardAiInsight}
             onGoToRisk={() => { setBreakdownMetric(null); setScreen('risk'); }}
+            healthLog={healthLog}
           />
         )}
         {screen === 'trainer' && (
@@ -522,11 +564,11 @@ function PatientView({ user, onLogout, theme, setTheme }) {
         {screen === 'settings' && (
           <PatientSettingsPage
             patientId={patientId}
-            metrics={metrics}
-            visibleMetrics={visibleMetrics}
-            setVisibleMetrics={setVisibleMetrics}
+            kpis={patientKpis}
+            uiPreferences={uiPreferences}
+            setUiPreferences={updateUiPreferences}
             aiEnabled={aiEnabled}
-            setAiEnabled={setAiEnabled}
+            setAiEnabled={updateAiEnabled}
             theme={theme} 
             setTheme={setTheme} 
             onLogout={onLogout}

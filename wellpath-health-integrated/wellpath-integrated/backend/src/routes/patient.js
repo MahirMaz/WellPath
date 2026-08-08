@@ -3,9 +3,79 @@ import { pool } from '../config/db.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
+const asyncRoute = (handler) => (req, res, next) => {
+  Promise.resolve(handler(req, res, next)).catch(next);
+};
 
 // All routes require authentication
 router.use(authenticate);
+
+async function ownsPatientRecord(req, patientId) {
+  if (req.user.role !== 'patient') return false;
+  const [rows] = await pool.query(
+    'SELECT patient_id FROM patient_profiles WHERE patient_id = ? AND user_id = ? LIMIT 1',
+    [patientId, req.user.userId]
+  );
+  return rows.length > 0;
+}
+
+async function requireOwnPatient(req, res, next) {
+  try {
+    if (!(await ownsPatientRecord(req, req.params.id))) {
+      return res.status(403).json({ error: 'You can only manage your own patient settings.' });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
+let supportTablesPromise;
+function ensurePatientSupportTables() {
+  if (!supportTablesPromise) {
+    supportTablesPromise = Promise.all([
+      pool.query(`CREATE TABLE IF NOT EXISTS patient_app_preferences (
+        patient_id INT NOT NULL PRIMARY KEY,
+        ai_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        ui_preferences JSON NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_patient_app_preferences_patient FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
+      )`),
+      pool.query(`CREATE TABLE IF NOT EXISTS patient_health_connections (
+        patient_id INT NOT NULL,
+        provider VARCHAR(40) NOT NULL,
+        connection_status VARCHAR(30) NOT NULL DEFAULT 'not_connected',
+        permissions JSON NULL,
+        last_sync DATETIME NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (patient_id, provider),
+        CONSTRAINT fk_patient_health_connections_patient FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
+      )`),
+      pool.query(`CREATE TABLE IF NOT EXISTS patient_food_log (
+        food_log_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        patient_id INT NOT NULL,
+        record_date DATE NOT NULL,
+        food_name VARCHAR(180) NOT NULL,
+        calories DECIMAL(8,2) NOT NULL DEFAULT 0,
+        protein_g DECIMAL(8,2) NOT NULL DEFAULT 0,
+        carbs_g DECIMAL(8,2) NOT NULL DEFAULT 0,
+        sugar_g DECIMAL(8,2) NOT NULL DEFAULT 0,
+        fibre_g DECIMAL(8,2) NOT NULL DEFAULT 0,
+        fat_g DECIMAL(8,2) NOT NULL DEFAULT 0,
+        saturated_fat_g DECIMAL(8,2) NOT NULL DEFAULT 0,
+        sodium_mg DECIMAL(8,2) NOT NULL DEFAULT 0,
+        source VARCHAR(30) NOT NULL DEFAULT 'manual',
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_patient_food_date (patient_id, record_date),
+        CONSTRAINT fk_patient_food_log_patient FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
+      )`),
+    ]).catch((error) => {
+      supportTablesPromise = null;
+      throw error;
+    });
+  }
+  return supportTablesPromise;
+}
 
 // GET /api/patient/:id/dashboard
 router.get('/:id/dashboard', async (req, res) => {
@@ -396,6 +466,123 @@ router.get('/:id/care-team', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.get('/:id/preferences', requireOwnPatient, asyncRoute(async (req, res) => {
+  await ensurePatientSupportTables();
+  const [rows] = await pool.query(
+    'SELECT ai_enabled, ui_preferences FROM patient_app_preferences WHERE patient_id = ? LIMIT 1',
+    [req.params.id]
+  );
+  const row = rows[0];
+  const uiPreferences = row?.ui_preferences
+    ? (typeof row.ui_preferences === 'string' ? JSON.parse(row.ui_preferences) : row.ui_preferences)
+    : null;
+  res.json({ ai_enabled: row ? Boolean(row.ai_enabled) : true, ui_preferences: uiPreferences });
+}));
+
+router.patch('/:id/preferences', requireOwnPatient, asyncRoute(async (req, res) => {
+  await ensurePatientSupportTables();
+  const { aiEnabled, uiPreferences } = req.body || {};
+  if (typeof aiEnabled !== 'boolean' && !uiPreferences) {
+    return res.status(400).json({ error: 'No supported preference was provided.' });
+  }
+  await pool.query(`
+    INSERT INTO patient_app_preferences (patient_id, ai_enabled, ui_preferences)
+    VALUES (?, COALESCE(?, TRUE), ?)
+    ON DUPLICATE KEY UPDATE
+      ai_enabled = IF(? IS NULL, ai_enabled, VALUES(ai_enabled)),
+      ui_preferences = COALESCE(VALUES(ui_preferences), ui_preferences)
+  `, [
+    req.params.id,
+    typeof aiEnabled === 'boolean' ? aiEnabled : null,
+    uiPreferences ? JSON.stringify(uiPreferences) : null,
+    typeof aiEnabled === 'boolean' ? aiEnabled : null,
+  ]);
+  const [rows] = await pool.query(
+    'SELECT ai_enabled, ui_preferences FROM patient_app_preferences WHERE patient_id = ? LIMIT 1',
+    [req.params.id]
+  );
+  const row = rows[0];
+  res.json({
+    ai_enabled: Boolean(row.ai_enabled),
+    ui_preferences: typeof row.ui_preferences === 'string' ? JSON.parse(row.ui_preferences) : row.ui_preferences,
+  });
+}));
+
+router.get('/:id/connections', requireOwnPatient, asyncRoute(async (req, res) => {
+  await ensurePatientSupportTables();
+  const [rows] = await pool.query(`
+    SELECT provider, connection_status AS status, permissions, last_sync
+    FROM patient_health_connections WHERE patient_id = ? ORDER BY provider
+  `, [req.params.id]);
+  const existing = new Map(rows.map((row) => [row.provider, {
+    ...row,
+    permissions: row.permissions
+      ? (typeof row.permissions === 'string' ? JSON.parse(row.permissions) : row.permissions)
+      : [],
+  }]));
+  res.json(['apple_health', 'health_connect'].map((provider) => existing.get(provider) || {
+    provider, status: 'not_connected', permissions: [], last_sync: null,
+  }));
+}));
+
+router.patch('/:id/connections/:provider', requireOwnPatient, asyncRoute(async (req, res) => {
+  await ensurePatientSupportTables();
+  const provider = String(req.params.provider);
+  if (!['apple_health', 'health_connect'].includes(provider)) {
+    return res.status(400).json({ error: 'Unsupported health data provider.' });
+  }
+  const status = req.body.status === 'connected' ? 'connected' : 'not_connected';
+  const permissions = Array.isArray(req.body.permissions) ? req.body.permissions : [];
+  const lastSync = req.body.last_sync || null;
+  await pool.query(`
+    INSERT INTO patient_health_connections (patient_id, provider, connection_status, permissions, last_sync)
+    VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE connection_status = VALUES(connection_status), permissions = VALUES(permissions), last_sync = VALUES(last_sync)
+  `, [req.params.id, provider, status, JSON.stringify(permissions), lastSync]);
+  res.json({ provider, status, permissions, last_sync: lastSync });
+}));
+
+router.get('/:id/nutrition-logs', requireOwnPatient, asyncRoute(async (req, res) => {
+  await ensurePatientSupportTables();
+  const days = Math.min(Math.max(Number.parseInt(req.query.days, 10) || 45, 1), 365);
+  const [rows] = await pool.query(`
+    SELECT food_log_id AS id, record_date AS recordDate, food_name AS name,
+      calories AS kcal, protein_g AS protein, carbs_g AS carbs, sugar_g AS sugar,
+      fibre_g AS fibre, fat_g AS fat, saturated_fat_g AS satfat, sodium_mg AS sodium,
+      source, created_at AS createdAt
+    FROM patient_food_log
+    WHERE patient_id = ? AND record_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+    ORDER BY record_date ASC, food_log_id ASC
+  `, [req.params.id, days]);
+  res.json(rows.map((row) => ({
+    ...row,
+    recordDate: new Date(row.recordDate).toISOString().slice(0, 10),
+    ...Object.fromEntries(['kcal', 'protein', 'carbs', 'sugar', 'fibre', 'fat', 'satfat', 'sodium'].map((key) => [key, Number(row[key]) || 0])),
+  })));
+}));
+
+router.post('/:id/nutrition-logs', requireOwnPatient, asyncRoute(async (req, res) => {
+  await ensurePatientSupportTables();
+  const entry = req.body || {};
+  const recordDate = /^\d{4}-\d{2}-\d{2}$/.test(String(entry.recordDate || '')) ? entry.recordDate : new Date().toISOString().slice(0, 10);
+  const name = String(entry.name || '').trim().slice(0, 180);
+  if (!name) return res.status(400).json({ error: 'Food name is required.' });
+  const number = (key) => Math.max(0, Number(entry[key]) || 0);
+  const [result] = await pool.query(`
+    INSERT INTO patient_food_log
+      (patient_id, record_date, food_name, calories, protein_g, carbs_g, sugar_g, fibre_g, fat_g, saturated_fat_g, sodium_mg, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [req.params.id, recordDate, name, number('kcal'), number('protein'), number('carbs'), number('sugar'), number('fibre'), number('fat'), number('satfat'), number('sodium'), entry.source === 'ai_estimate' ? 'ai_estimate' : 'manual']);
+  res.status(201).json({ id: result.insertId, recordDate, name, ...Object.fromEntries(['kcal', 'protein', 'carbs', 'sugar', 'fibre', 'fat', 'satfat', 'sodium'].map((key) => [key, number(key)])), source: entry.source === 'ai_estimate' ? 'ai_estimate' : 'manual' });
+}));
+
+router.delete('/:id/nutrition-logs/:logId', requireOwnPatient, asyncRoute(async (req, res) => {
+  await ensurePatientSupportTables();
+  const [result] = await pool.query('DELETE FROM patient_food_log WHERE food_log_id = ? AND patient_id = ?', [req.params.logId, req.params.id]);
+  if (!result.affectedRows) return res.status(404).json({ error: 'Food log entry not found.' });
+  res.json({ success: true });
+}));
 
 // GET /api/patient/:id/profile
 router.get('/:id/profile', async (req, res) => {

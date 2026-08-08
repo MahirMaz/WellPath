@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Sparkles, Droplets, CalendarDays, ShieldCheck, Plus, Trash2 } from 'lucide-react';
+import { Droplets, CalendarDays, ShieldCheck, Plus, Trash2, ChevronDown } from 'lucide-react';
 import { api } from '../../api';
+import { AiInsightBox } from './AiInsightBox.jsx';
 
 const DAY_MS = 86400000;
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
@@ -50,6 +51,40 @@ function fitCycleModel(lengths) {
     if (error < best.error - 1e-9) best = { alpha: Math.round(a * 100) / 100, error };
   }
   return { alpha: best.alpha, error: Math.round(best.error * 10) / 10, fitted: true };
+}
+
+// Prediction confidence, derived from the model's own out-of-sample error and
+// how much history we could validate against. Tight, well-tested fit + more
+// cycles => higher confidence. This is a transparent heuristic on real values,
+// not a fabricated number.
+function predictionConfidence(errorDays, cyclesLogged, sd) {
+  const e = Number.isFinite(errorDays) ? errorDays : (Number.isFinite(sd) ? sd : 4);
+  const varScore = Math.max(0, Math.min(1, 1 - (e - 1) / 6)); // e<=1 -> 1, e>=7 -> 0
+  const dataScore = Math.min(1, (cyclesLogged || 0) / 10);
+  const conf = 0.72 * varScore + 0.28 * dataScore;
+  return Math.round(Math.max(0.45, Math.min(0.97, conf)) * 100);
+}
+
+// How much each cycle in the window is weighted (oldest..newest), summing to 1.
+// Normalized exponential recency weighting with the fitted decay: the newest
+// cycle carries the most, decaying smoothly into the past.
+function ewmaWeights(n, alpha) {
+  const raw = [];
+  for (let i = 0; i < n; i += 1) raw[i] = Math.pow(1 - alpha, n - 1 - i);
+  const sum = raw.reduce((s, v) => s + v, 0) || 1;
+  return raw.map((v) => v / sum);
+}
+
+// Are cycles getting longer, shorter, or holding steady lately?
+function cycleTrend(lengths) {
+  if (lengths.length < 4) return 'Stable';
+  const recent = lengths.slice(-3);
+  const prev = lengths.slice(-6, -3);
+  if (!prev.length) return 'Stable';
+  const d = mean(recent) - mean(prev);
+  if (d >= 1) return 'Lengthening';
+  if (d <= -1) return 'Shortening';
+  return 'Stable';
 }
 
 function computeCycleStats(periods, signals) {
@@ -104,6 +139,10 @@ function computeCycleStats(periods, signals) {
   else if (dayInCycle < ovulationDay - 1) phase = 'Follicular phase';
   else if (dayInCycle <= ovulationDay + 1) phase = 'Around ovulation (estimated)';
 
+  const cyclesLogged = cycles.length;
+  const confidence = predictionConfidence(model.fitted ? model.error : sd, cyclesLogged, sd);
+  const trend = cycleTrend(cycles.map((c) => c.length));
+
   return {
     enough: true,
     cycles,
@@ -125,6 +164,10 @@ function computeCycleStats(periods, signals) {
     fittedAlpha: model.alpha,
     modelError: model.fitted ? model.error : null,
     modelFitted: model.fitted,
+    cyclesLogged,
+    confidence,
+    trend,
+    recentLengths: recent,
   };
 }
 
@@ -158,12 +201,193 @@ function computeSignals(healthLog) {
   }).filter(Boolean);
 }
 
-export function CyclePage({ patientId, healthLog = [], aiEnabled, onGenerateAiInsight }) {
+// ===== Visual cycle timeline =====
+// One left-to-right bar = your current cycle in days. It labels the three things
+// on the bar itself so it reads without decoding a legend: where "today" falls
+// (a flagged marker), the cycle's start and predicted next period as the two
+// ends, and the ± uncertainty as a shaded band around the predicted day. Phase
+// colors sit quietly underneath as context, explained by the legend below.
+function CycleTimeline({ stats }) {
+  const expLen = Math.max(10, Math.round(stats.expectedLength));
+  const predDay = daysBetween(stats.lastStart, dateKey(stats.predicted.toISOString()));
+  const today = Math.max(1, stats.dayInCycle);
+  const total = Math.max(predDay + stats.window + 1, expLen + 1, today + 1);
+  const pos = (day) => Math.max(0, Math.min(100, ((day - 1) / total) * 100));
+  const ov = Math.max(6, expLen - 14);
+
+  const phases = [
+    { label: 'Menstrual', from: 1, to: 5, color: 'var(--coral)' },
+    { label: 'Follicular', from: 6, to: ov, color: 'var(--wellpath-accent)' },
+    { label: 'Luteal', from: ov + 1, to: expLen, color: 'var(--wellpath-blue)' },
+  ].filter((p) => p.to >= p.from);
+
+  const winLeft = pos(Math.max(1, predDay - stats.window));
+  const winWidth = Math.max(3, pos(predDay + stats.window + 1) - winLeft);
+  const todayPct = pos(today);
+  // Keep the floating "today" flag from spilling off either edge.
+  const flagPct = Math.max(15, Math.min(85, todayPct));
+
+  // Which day (and phase) sits under the cursor as you scrub across the bar.
+  const [hover, setHover] = useState(null);
+  const phaseAt = (day) => {
+    if (day >= predDay - stats.window && day <= predDay + stats.window) return 'Predicted period';
+    const p = phases.find((ph) => day >= ph.from && day <= ph.to);
+    return p ? p.label : null;
+  };
+  const onScrub = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const day = Math.max(1, Math.round(frac * total) + 1);
+    setHover({ pct: frac * 100, day, phase: phaseAt(day) });
+  };
+
+  return (
+    <div className="cycle-tl">
+      <p className="cycle-tl-caption">Where you are in this cycle — and when your next period is expected.</p>
+
+      <div className="cycle-tl-plot">
+        {hover ? (
+          <div className="cycle-tl-hover" style={{ left: `${Math.max(15, Math.min(85, hover.pct))}%` }}>
+            Day {hover.day}{hover.phase ? ` · ${hover.phase}` : ''}
+          </div>
+        ) : (
+          <div className="cycle-tl-flag" style={{ left: `${flagPct}%` }}>
+            Today · Day {today}
+          </div>
+        )}
+        <div
+          className="cycle-tl-track"
+          onMouseMove={onScrub}
+          onMouseLeave={() => setHover(null)}
+        >
+          {phases.map((p) => (
+            <div key={p.label} className="cycle-tl-seg"
+              style={{ left: `${pos(p.from)}%`, width: `${pos(p.to + 1) - pos(p.from)}%`, background: p.color }} />
+          ))}
+          <div className="cycle-tl-window" style={{ left: `${winLeft}%`, width: `${winWidth}%` }} />
+          <div className="cycle-tl-today-line" style={{ left: `${todayPct}%` }} />
+          {hover && <div className="cycle-tl-hover-line" style={{ left: `${hover.pct}%` }} />}
+        </div>
+      </div>
+
+      <div className="cycle-tl-ends">
+        <span className="cycle-tl-end">
+          <em>Cycle start</em>
+          <strong>Day 1</strong>
+        </span>
+        <span className="cycle-tl-end right">
+          <em>Next period</em>
+          <strong>{fmtDate(stats.predicted)} · ±{stats.window} day{stats.window === 1 ? '' : 's'}</strong>
+        </span>
+      </div>
+
+      <div className="cycle-tl-legend">
+        <span className="cycle-tl-legend-title">Phases:</span>
+        {phases.map((p) => (
+          <span key={p.label}><i style={{ background: p.color }} />{p.label}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===== "Why this date?" transparent breakdown =====
+// Shows the real math: the recent cycle lengths, how much each is weighted by
+// the fitted recency model (actual EWMA weights), and the chain from those to
+// the predicted date. Nothing here is invented — it's the model, made visible.
+function CycleWhy({ stats }) {
+  const lengths = stats.recentLengths || [];
+  const weights = ewmaWeights(lengths.length, stats.fittedAlpha);
+  const maxW = Math.max(...weights, 0.0001);
+  const expLen = Math.round(stats.expectedLength);
+
+  return (
+    <div className="cycle-why">
+      <p className="cycle-why-lead">Each recent cycle, weighted by how recent it is:</p>
+      <div className="cycle-why-bars">
+        {lengths.map((len, i) => (
+          <div className="cycle-why-row" key={i}>
+            <span className="cycle-why-len">{len}d</span>
+            <div className="cycle-why-track">
+              <div className="cycle-why-fill" style={{ width: `${(weights[i] / maxW) * 100}%` }} />
+            </div>
+            <span className="cycle-why-pct">{Math.round(weights[i] * 100)}%</span>
+          </div>
+        ))}
+      </div>
+      <div className="cycle-why-chain">
+        <span>Weighted cycle length <strong>{expLen} days</strong></span>
+        {stats.adjustmentDays !== 0 && (
+          <span>Recent symptoms <strong>{stats.adjustmentDays < 0 ? '−' : '+'}{Math.abs(stats.adjustmentDays)} day{Math.abs(stats.adjustmentDays) === 1 ? '' : 's'}</strong></span>
+        )}
+        <span>Next start <strong>{fmtDate(stats.predicted)}</strong></span>
+      </div>
+    </div>
+  );
+}
+
+// ===== Prediction factors =====
+// Presents the inputs behind the estimate as neutral health information rather
+// than a product comparison.
+function CycleFactors({ stats }) {
+  const signalMatch = stats.strength === null ? null : Math.round(stats.strength * 100);
+  const factors = [
+    {
+      label: 'Cycle history',
+      detail: `${stats.cyclesLogged} logged cycle${stats.cyclesLogged === 1 ? '' : 's'} · recent average ${Math.round(stats.simpleAvg)} days`,
+      value: `${Math.round(stats.expectedLength)} days`,
+    },
+    {
+      label: 'Recent cycle pattern',
+      detail: 'Recent cycles are weighted more than older entries',
+      value: stats.trend,
+    },
+    {
+      label: 'Recent body signals',
+      detail: signalMatch === null
+        ? 'Not enough recent health data to compare'
+        : `${signalMatch}% of tracked signals match a premenstrual pattern`,
+      value: stats.adjustmentDays === 0
+        ? 'No date change'
+        : `${stats.adjustmentDays > 0 ? '+' : '−'}${Math.abs(stats.adjustmentDays)} day${Math.abs(stats.adjustmentDays) === 1 ? '' : 's'}`,
+    },
+    {
+      label: 'Natural variability',
+      detail: `Your logged cycles are ${stats.regularity}`,
+      value: `±${stats.window} day${stats.window === 1 ? '' : 's'}`,
+    },
+  ];
+
+  return (
+    <section className="cycle-factors-card">
+      <div className="cycle-factors-head">
+        <span>Prediction factors</span>
+        <p>Information used to estimate your next period.</p>
+      </div>
+
+      <div className="cycle-factor-list">
+        {factors.map((factor, index) => (
+          <div className="cycle-factor-row" key={factor.label}>
+            <span className="cycle-factor-number">{index + 1}</span>
+            <div>
+              <strong>{factor.label}</strong>
+              <p>{factor.detail}</p>
+            </div>
+            <em>{factor.value}</em>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function CyclePage({ patientId, healthLog = [], aiEnabled = true, onGenerateAiInsight }) {
   const [periods, setPeriods] = useState([]);
   const [startInput, setStartInput] = useState(todayKey());
   const [saveNote, setSaveNote] = useState('');
-  const [aiText, setAiText] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [whyOpen, setWhyOpen] = useState(false);
+  const [predictionOpen, setPredictionOpen] = useState(false);
+  const [recentCyclesOpen, setRecentCyclesOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,46 +425,6 @@ export function CyclePage({ patientId, healthLog = [], aiEnabled, onGenerateAiIn
     }
   };
 
-  const askAi = async () => {
-    if (!aiEnabled || !onGenerateAiInsight || aiLoading) return;
-    setAiLoading(true);
-    setAiText(null);
-    try {
-      const text = await onGenerateAiInsight({
-        insightType: 'cycle',
-        targetId: 'cycle',
-        targetTitle: 'Cycle outlook',
-        targetContext: {
-          method: 'recency weight fitted to this person\'s own cycle history (walk-forward), then nudged by current premenstrual physiological signals; nudge size scales with the fitted model error',
-          fittedRecencyWeight: stats.enough ? stats.fittedAlpha : null,
-          modelAccuracyDays: stats.enough ? stats.modelError : null,
-          predictedStart: stats.enough ? dateKey(stats.predicted.toISOString()) : null,
-          calendarEstimate: stats.enough ? dateKey(stats.baseline.toISOString()) : null,
-          signalAdjustmentDays: stats.enough ? stats.adjustmentDays : null,
-          daysUntilPredicted: stats.enough ? stats.daysUntil : null,
-          expectedCycleLength: stats.enough ? Math.round(stats.expectedLength) : null,
-          typicalCycleLength: stats.enough ? Math.round(stats.simpleAvg) : null,
-          variabilityDays: stats.enough ? Math.round(stats.sd * 10) / 10 : null,
-          regularity: stats.enough ? stats.regularity : 'not enough history',
-          currentPhase: stats.enough ? stats.phase : null,
-          dayInCycle: stats.enough ? stats.dayInCycle : null,
-          cyclesLogged: stats.cycles.length,
-          physiologicalSignals: signals.map((s) => ({
-            factor: s.label,
-            recent: `${s.recent} ${s.unit}`,
-            changeVsBaseline: `${s.delta} ${s.unit}`,
-            matchesPremenstrualPattern: s.matches,
-          })),
-        },
-      });
-      setAiText(text);
-    } catch (error) {
-      setAiText("I'm having trouble analyzing your cycle right now. Please try again later.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   return (
     <div className="mobile-flow">
       <div className="mobile-section-title">
@@ -251,45 +435,7 @@ export function CyclePage({ patientId, healthLog = [], aiEnabled, onGenerateAiIn
         <Droplets size={19} />
       </div>
 
-      {stats.enough ? (
-        <section className="cycle-predict-card">
-          <span className="cycle-predict-label">Next period expected</span>
-          <strong className="cycle-predict-date">{fmtDate(stats.predicted)}</strong>
-          <em className="cycle-predict-sub">
-            {stats.daysUntil > 0
-              ? `in about ${stats.daysUntil} day${stats.daysUntil === 1 ? '' : 's'}`
-              : stats.daysUntil === 0
-                ? 'expected today'
-                : `${Math.abs(stats.daysUntil)} day${Math.abs(stats.daysUntil) === 1 ? '' : 's'} late`}
-            {` · give or take ${stats.window} day${stats.window === 1 ? '' : 's'}`}
-          </em>
-          {stats.adjustmentDays !== 0 && (
-            <span className="cycle-adjust-note">
-              <Sparkles size={12} /> Shifted {Math.abs(stats.adjustmentDays)} day{Math.abs(stats.adjustmentDays) === 1 ? '' : 's'}{' '}
-              {stats.adjustmentDays < 0 ? 'earlier' : 'later'} than the {fmtDate(stats.baseline)} calendar estimate, based on your recent signals.
-            </span>
-          )}
-          <div className="cycle-stat-row">
-            <div><span>Cycle length</span><strong>~{Math.round(stats.expectedLength)} days</strong></div>
-            <div><span>Regularity</span><strong>{stats.regularity}</strong></div>
-            <div><span>Today</span><strong>Day {stats.dayInCycle}</strong></div>
-            <div><span>Phase</span><strong>{stats.phase}</strong></div>
-          </div>
-          {stats.modelFitted && (
-            <span className="cycle-model-note">
-              Recency weighting tuned to your history · typically accurate to ±{stats.modelError} day{stats.modelError === 1 ? '' : 's'}.
-            </span>
-          )}
-        </section>
-      ) : (
-        <section className="cycle-predict-card empty">
-          <span className="cycle-predict-label">Next period</span>
-          <strong className="cycle-predict-date">Not enough history</strong>
-          <em className="cycle-predict-sub">Log at least two period start dates and a prediction will appear here.</em>
-        </section>
-      )}
-
-      <section className="cycle-log-card">
+      <section className="cycle-log-card cycle-log-top">
         <strong>Log a period start</strong>
         <div className="cycle-log-row">
           <input
@@ -303,26 +449,93 @@ export function CyclePage({ patientId, healthLog = [], aiEnabled, onGenerateAiIn
           </button>
         </div>
         {saveNote && <small className="cycle-note">{saveNote}</small>}
+
+        <button
+          type="button"
+          className="cycle-history-toggle"
+          onClick={() => setRecentCyclesOpen((open) => !open)}
+          aria-expanded={recentCyclesOpen}
+        >
+          <span>
+            <CalendarDays size={15} />
+            <strong>Recent cycles</strong>
+          </span>
+          <span>
+            <em>{stats.cycles.length} logged</em>
+            <ChevronDown size={16} className={recentCyclesOpen ? 'open' : ''} />
+          </span>
+        </button>
+
+        {recentCyclesOpen && (
+          <div className="cycle-history-list cycle-history-expanded">
+            {stats.cycles.length ? (
+              stats.cycles.slice(-6).reverse().map((c) => (
+                <div className="cycle-history-item" key={c.start}>
+                  <CalendarDays size={14} />
+                  <span>{fmtDate(toDate(c.start))}</span>
+                  <strong>{c.length} days</strong>
+                  <button type="button" aria-label={`Remove ${c.start}`} onClick={() => removeStart(c.start)}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="cycle-history-empty">No completed cycles logged yet.</p>
+            )}
+          </div>
+        )}
       </section>
 
-      {stats.cycles.length > 0 && (
-        <section className="cycle-history-card">
-          <div className="cycle-history-head">
-            <strong>Recent cycles</strong>
-            <em>{stats.cycles.length} logged</em>
-          </div>
-          <div className="cycle-history-list">
-            {stats.cycles.slice(-6).reverse().map((c) => (
-              <div className="cycle-history-item" key={c.start}>
-                <CalendarDays size={14} />
-                <span>{fmtDate(toDate(c.start))}</span>
-                <strong>{c.length} days</strong>
-                <button type="button" aria-label={`Remove ${c.start}`} onClick={() => removeStart(c.start)}>
-                  <Trash2 size={13} />
-                </button>
+      {stats.enough ? (
+        <section className="cycle-predict-card">
+          <button
+            type="button"
+            className="cycle-predict-toggle"
+            onClick={() => setPredictionOpen((open) => !open)}
+            aria-expanded={predictionOpen}
+          >
+            <div className="cycle-predict-summary">
+              <span className="cycle-predict-label">Next period predicted</span>
+              <strong className="cycle-predict-date">{fmtDate(stats.predicted)}</strong>
+              <em className="cycle-predict-sub">
+                {stats.daysUntil > 0
+                  ? `In ${stats.daysUntil} day${stats.daysUntil === 1 ? '' : 's'}`
+                  : stats.daysUntil === 0
+                    ? 'Expected today'
+                    : `${Math.abs(stats.daysUntil)} day${Math.abs(stats.daysUntil) === 1 ? '' : 's'} overdue`}
+                {` · ±${stats.window} day${stats.window === 1 ? '' : 's'}`}
+              </em>
+            </div>
+            <div className="cycle-predict-toggle-side">
+              <div className="cycle-confidence" title="Derived from the model's out-of-sample error and how many cycles were analyzed">
+                <span className="cycle-conf-value">{stats.confidence}%</span>
+                <span className="cycle-conf-label">confidence</span>
               </div>
-            ))}
-          </div>
+              <ChevronDown size={19} className={predictionOpen ? 'open' : ''} />
+            </div>
+          </button>
+
+          {predictionOpen && (
+            <div className="cycle-predict-expanded">
+              {/* See it: the visual timeline anchors the prediction. */}
+              <CycleTimeline stats={stats} />
+
+              {/* Understand it: one structured explanation of the estimate. */}
+              <CycleFactors stats={stats} />
+
+              {/* Prove it: the underlying math, tucked away for the curious. */}
+              <button type="button" className="cycle-why-toggle" onClick={() => setWhyOpen((v) => !v)} aria-expanded={whyOpen}>
+                How this date is calculated <ChevronDown size={15} className={whyOpen ? 'open' : ''} />
+              </button>
+              {whyOpen && <CycleWhy stats={stats} />}
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="cycle-predict-card empty">
+          <span className="cycle-predict-label">Next period</span>
+          <strong className="cycle-predict-date">Not enough history</strong>
+          <em className="cycle-predict-sub">Log at least two period start dates and a prediction will appear here.</em>
         </section>
       )}
 
@@ -349,24 +562,36 @@ export function CyclePage({ patientId, healthLog = [], aiEnabled, onGenerateAiIn
         )}
       </section>
 
-      <section className="score-ai-insight mood-ai-card">
-        <span className="score-ai-icon"><Sparkles size={22} /></span>
-        <div>
-          <strong>AI cycle analysis</strong>
-          {aiText ? (
-            <p>{aiText}</p>
-          ) : aiLoading ? (
-            <p className="ai-loading-text">Reading your cycle history and recent signals...</p>
-          ) : (
-            <p>{aiEnabled ? 'Ask the AI to interpret your prediction and what your recent metrics suggest.' : 'AI is off in Settings.'}</p>
-          )}
-          {aiEnabled && !aiLoading && (
-            <button type="button" className="mood-ai-btn" onClick={askAi}>
-              {aiText ? 'Analyze again' : 'Analyze my cycle'}
-            </button>
-          )}
-        </div>
-      </section>
+      {aiEnabled && stats.enough && (
+        <AiInsightBox
+          title="Ask about your cycle"
+          aiEnabled={aiEnabled}
+          patientId={patientId}
+          presets={[
+            { label: 'Why this date?', question: 'In plain terms, why is my next period estimated for this date?' },
+            { label: 'Is my cycle regular?', question: 'Does my logged history suggest my cycle is regular or variable?' },
+            { label: 'What affects the estimate?', question: 'What factors change my predicted next-period date?' },
+          ]}
+          onAsk={(question) => onGenerateAiInsight({
+            insightType: 'cycle',
+            targetId: 'cycle',
+            targetTitle: 'Cycle outlook',
+            targetContext: {
+              userQuestion: question,
+              predictedStart: dateKey(stats.predicted.toISOString()),
+              daysUntilPredicted: stats.daysUntil,
+              expectedCycleLength: Math.round(stats.expectedLength),
+              regularity: stats.regularity,
+              fittedRecencyWeight: stats.fittedAlpha,
+              modelAccuracyDays: stats.modelError,
+              signalAdjustmentDays: stats.adjustmentDays,
+              currentPhase: stats.phase,
+              dayInCycle: stats.dayInCycle,
+              cyclesLogged: stats.cyclesLogged,
+            },
+          })}
+        />
+      )}
 
       <div className="quiet-disclaimer">
         <ShieldCheck size={15} /> Estimates from your logged history — not medical advice, and not for preventing or planning pregnancy.

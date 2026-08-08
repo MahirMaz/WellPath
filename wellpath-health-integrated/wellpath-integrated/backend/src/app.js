@@ -9,6 +9,7 @@ import patientRoutes from './routes/patient.js';
 import clinicianRoutes from './routes/clinician.js';
 import trainerRoutes from './routes/trainer.js';
 import aiRoutes from './routes/ai.js';
+import adminRoutes from './routes/admin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +43,7 @@ app.use('/api/patient', patientRoutes);
 app.use('/api/clinician', clinicianRoutes);
 app.use('/api/trainer', trainerRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

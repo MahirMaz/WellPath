@@ -5,7 +5,9 @@ The original app project is not modified.
 
 ## What is included
 
-- Patient, trainer, and clinician role-based experiences
+- Patient, trainer, clinician, and privacy-limited admin role-based experiences
+- Patient card visibility, order, spacing, section, start-screen, motion, and AI preferences
+- Dated nutrition history with careful food-to-lifestyle pattern comparisons
 - Desktop patient navigation with responsive mobile behavior
 - Authenticated bridge to the existing WellPath backend
 - Live Groq-powered health insights and food nutrition estimates
@@ -39,6 +41,7 @@ All showcase accounts use `password123`.
 - Patient: `alex@example.com`
 - Trainer: `jordan@example.com`
 - Clinician: `rivera@example.com`
+- Admin: `admin@wellpath.example`
 
 ## Production
 

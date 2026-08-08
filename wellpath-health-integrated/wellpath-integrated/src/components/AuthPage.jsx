@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HeartPulse, Mail, Lock, Sun, Moon, User, Users, Stethoscope, ClipboardList } from 'lucide-react';
+import { HeartPulse, Mail, Lock, Sun, Moon, User, Users, Stethoscope, ClipboardList, ShieldCheck } from 'lucide-react';
 import { api, setAuthToken, setCurrentUser } from '../api';
 import HealthSurvey from './survey/HealthSurvey';
 
@@ -15,11 +15,13 @@ function AuthPage({ onLogin, theme, setTheme }) {
     { id: 'patient', title: 'Patient', detail: 'Daily mobile app for your own habits.', icon: User },
     { id: 'trainer', title: 'Trainer', detail: 'Support view for activity and recovery.', icon: Users },
     { id: 'clinician', title: 'Clinician', detail: 'Separate trend review dashboard.', icon: Stethoscope },
+    { id: 'dba', title: 'Admin', detail: 'Accounts, access, connections, and audit.', icon: ShieldCheck },
   ];
   const roleCredentials = {
     patient: 'alex@example.com',
     trainer: 'jordan@example.com',
     clinician: 'rivera@example.com',
+    dba: 'admin@wellpath.example',
   };
 
   const selectRole = (role) => {
@@ -55,6 +57,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
     { role: 'Patient', name: 'Robert', email: 'robert@example.com' },
     { role: 'Trainer', name: 'Jordan', email: 'jordan@example.com' },
     { role: 'Clinician', name: 'Dr. Rivera', email: 'rivera@example.com' },
+    { role: 'Admin', name: 'Morgan', email: 'admin@wellpath.example', roleId: 'dba' },
   ];
 
   return (
@@ -140,7 +143,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
                 onClick={() => {
                   setEmail(acc.email);
                   setPassword('password123');
-                  setSelectedRole(acc.role.toLowerCase());
+                  setSelectedRole(acc.roleId || acc.role.toLowerCase());
                 }}
                 type="button"
               >
@@ -161,13 +164,14 @@ function AuthPage({ onLogin, theme, setTheme }) {
           </div>
           <h1>Your health workspace.</h1>
           <p>
-            WellPath keeps patient, trainer, and clinician views separate.
+            WellPath keeps patient, trainer, clinician, and admin views separate.
             All data is stored securely in your local database.
           </p>
           <div className="auth-points">
             <span>✓ Patient daily tracking</span>
             <span>✓ Trainer workout support</span>
             <span>✓ Clinician trend review</span>
+            <span>✓ Privacy-limited administration</span>
           </div>
           <button type="button" className="survey-preview-btn" onClick={() => setShowSurvey(true)}>
             <ClipboardList size={16} />

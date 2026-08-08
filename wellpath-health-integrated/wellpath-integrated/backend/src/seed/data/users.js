@@ -25,6 +25,7 @@ export const users = [
   { user_id: 6, role_id: 2, account_status: 'active' },
   { user_id: 7, role_id: 3, account_status: 'active' },
   { user_id: 8, role_id: 1, account_status: 'active' },
+  { user_id: 9, role_id: 4, account_status: 'active' },
 ];
 
 export const userPii = [
@@ -35,5 +36,6 @@ export const userPii = [
   profile({ user_id: 5, full_name: 'Daniel Lee', date_of_birth: '1997-09-30', height_inches: 70, weight_lbs: 181, gender: 'Male', email: 'daniel@example.com' }),       // BMI ~26.0
   profile({ user_id: 6, full_name: 'Jordan Lee', date_of_birth: '1990-03-15', height_inches: 68, weight_lbs: 170, gender: 'Non-binary', email: 'jordan@example.com' }),
   profile({ user_id: 7, full_name: 'Dr. Rivera', date_of_birth: '1985-07-22', height_inches: 66, weight_lbs: 145, gender: 'Female', email: 'rivera@example.com' }),
+  profile({ user_id: 9, full_name: 'Morgan Chen', date_of_birth: '1988-02-14', height_inches: null, weight_lbs: null, gender: 'Not specified', email: 'admin@wellpath.example' }),
   profile({ user_id: 8, full_name: 'Robert Hayes', date_of_birth: '1964-03-10', height_inches: 69, weight_lbs: 224, gender: 'Male', email: 'robert@example.com' }), // 62, BMI ~33 — the at-risk profile
 ];

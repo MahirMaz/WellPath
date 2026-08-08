@@ -5,7 +5,7 @@ import { NutritionLogger } from './NutritionLogger.jsx';
 import { AiInsightBox } from '../patient/AiInsightBox.jsx';
 import './nutrition.css';
 
-export function NutritionTab({ patientId, aiEnabled = true, onGenerateAiInsight, onGoToRisk }) {
+export function NutritionTab({ patientId, aiEnabled = true, onGenerateAiInsight, onGoToRisk, healthLog = [] }) {
   const { profile: v, set } = useHealthProfile();
 
   const num = (k, label, help) => (
@@ -24,7 +24,7 @@ export function NutritionTab({ patientId, aiEnabled = true, onGenerateAiInsight,
       </header>
 
       {/* ---- food logger: AI estimate or manual entry -> nutrient totals -> guideline checks ---- */}
-      <NutritionLogger />
+      <NutritionLogger patientId={patientId} healthLog={healthLog} />
 
       {/* ---- habits that feed the Risk Signal ---- */}
       <section className="nt-inputs">
@@ -45,9 +45,9 @@ export function NutritionTab({ patientId, aiEnabled = true, onGenerateAiInsight,
           aiEnabled={aiEnabled}
           patientId={patientId}
           presets={[
-            { label: 'Is my diet balanced?', question: 'Based on my eating habits, does my diet look balanced, and what could I improve?' },
-            { label: 'Eat a bit healthier', question: 'What is one realistic change to eat a little healthier this week?' },
-            { label: 'Cut back on fast food', question: 'I eat fast food fairly often; how could I cut back without it feeling like a big change?' },
+            { label: 'Spot a meal pattern', question: 'What simple pattern stands out in my recent eating habits?' },
+            { label: 'Choose one food swap', question: 'What is one realistic food swap that fits my recent habits this week?' },
+            { label: 'Plan one home meal', question: 'Suggest one simple way to make one more meal at home this week.' },
           ]}
           onAsk={(question) => onGenerateAiInsight({
             insightType: 'nutrition',

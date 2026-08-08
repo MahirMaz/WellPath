@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { X, ArrowLeft, ArrowRight, Check, HeartPulse, ShieldCheck, Sparkles, RotateCcw } from 'lucide-react';
 import { SURVEY_META, SURVEY_STEPS, computeSummary, computeWellnessSnapshot } from './surveyConfig';
+import './survey.css';
 
 const EXCLUSIVE = ['None']; // multi-select options that clear the others when picked
 

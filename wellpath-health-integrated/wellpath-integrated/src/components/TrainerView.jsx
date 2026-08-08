@@ -5,6 +5,7 @@ import {
   RefreshCw, Save, ShieldCheck, Sparkles, Sun, Target, Timer, TrendingUp, UserCheck, Users, X,
 } from 'lucide-react';
 import { api } from '../api';
+import TrainerHome from './trainer/TrainerHome.jsx';
 
 const trainerSections = [
   { id: 'overview', label: 'Today', icon: LayoutDashboard },
@@ -210,7 +211,6 @@ function TrainerView({ user, onLogout, theme, setTheme }) {
   const weeklyExercise = recentTrends.reduce((sum, day) => sum + (Number(day.exercise) || 0), 0);
   const weeklyTarget = Number(plan?.weekly_target) || 180;
   const exerciseProgress = Math.min(100, Math.round((weeklyExercise / weeklyTarget) * 100));
-  const maxExercise = Math.max(...recentTrends.map((day) => Number(day.exercise) || 0), 1);
   const activeDays = recentTrends.filter((day) => Number(day.exercise) >= 30).length;
   const averageSleep = useMemo(() => {
     const values = recentTrends.map((day) => Number(day.sleep)).filter(Number.isFinite);
@@ -220,8 +220,6 @@ function TrainerView({ user, onLogout, theme, setTheme }) {
   const consistency = Number(selectedPatient?.kpis?.['Activity Consistency']);
   const lighterSession = (averageSleep && Number(averageSleep) < 6.5) || (Number.isFinite(recoveryScore) && recoveryScore < 65);
   const completedSessions = sessions.filter((session) => session.completion === 'Completed').length;
-  const latestFeedback = feedback[0];
-  const selectedTrendDay = recentTrends[selectedDayIndex] || recentTrends[recentTrends.length - 1];
   const metricDetails = [
     {
       id: 'consistency', icon: TrendingUp, label: 'Consistency',
@@ -320,10 +318,10 @@ function TrainerView({ user, onLogout, theme, setTheme }) {
         ))}
       </div>
 
-      <div className="trainer-title-row">
+      {activeSection !== 'overview' && <div className="trainer-title-row">
         <div><span className="section-kicker">Supporting</span><h1>{selectedPatient?.full_name}</h1><p>{selectedPatient?.primary_focus}</p></div>
         <div className="trainer-title-meta"><span><ShieldCheck size={15} /> Shared support data</span><span><RefreshCw size={15} /> Updated today</span></div>
-      </div>
+      </div>}
 
       <nav className="trainer-section-tabs" aria-label="Trainer workspace sections">
         {trainerSections.map(({ id, label, icon: Icon }) => (
@@ -340,72 +338,26 @@ function TrainerView({ user, onLogout, theme, setTheme }) {
       <main className="trainer-workspace-main" aria-busy={patientLoading}>
         {activeSection === 'overview' && (
           <>
-            <section className="trainer-quick-actions" aria-label="Trainer quick actions">
-              <div><span className="section-kicker">Quick actions</span><strong>What do you need to do?</strong></div>
-              <button type="button" onClick={() => openTrainerSection('plan')}><ClipboardList size={17} /><span>Adjust plan</span></button>
-              <button type="button" onClick={() => openTrainerSection('sessions')}><Plus size={17} /><span>Log session</span></button>
-              <button type="button" onClick={() => openTrainerSection('feedback')}><MessageSquare size={17} /><span>Write note</span></button>
-            </section>
-            <div className="trainer-kpi-grid">
-              {metricDetails.map((metric) => (
-                <TrainerMetric key={metric.id} {...metric} selected={selectedMetric === metric.id} onSelect={() => setSelectedMetric((current) => current === metric.id ? null : metric.id)} />
-              ))}
-            </div>
-
+            <TrainerHome
+              patient={selectedPatient}
+              plan={plan}
+              trends={trends}
+              feedback={feedback}
+              averageSleep={averageSleep}
+              consistency={consistency}
+              recoveryScore={recoveryScore}
+              activeDays={activeDays}
+              weeklyExercise={weeklyExercise}
+              weeklyTarget={weeklyTarget}
+              exerciseProgress={exerciseProgress}
+              selectedDayIndex={selectedDayIndex}
+              onSelectDay={setSelectedDayIndex}
+              onOpenSection={openTrainerSection}
+              onOpenMetric={(metricId) => setSelectedMetric((current) => current === metricId ? null : metricId)}
+            />
             {selectedMetricDetail && (
               <TrainerMetricDetail detail={selectedMetricDetail} detailRef={metricDetailRef} onClose={() => setSelectedMetric(null)} onAction={() => openTrainerSection(selectedMetricDetail.actionSection)} />
             )}
-
-            <div className="trainer-dashboard-grid">
-              <section className="trainer-panel trainer-readiness-panel">
-                <div className="trainer-panel-heading"><div><span className="section-kicker">Next session</span><h2>{lighterSession ? 'Keep the load flexible' : 'Plan looks appropriate to continue'}</h2></div><span className={`coach-status ${lighterSession ? 'recovery' : 'ready'}`}>{lighterSession ? 'Check in first' : 'Ready'}</span></div>
-                <p>{lighterSession
-                  ? 'Recent sleep or recovery is below the usual support range. Ask how the patient feels and be ready to shorten or simplify the session.'
-                  : 'Recent activity and recovery are steady. Confirm energy, comfort, and confidence before progressing the plan.'}</p>
-                <div className="trainer-check-grid">
-                  <span><CheckCircle2 size={16} /> Confirm today&apos;s energy</span>
-                  <span><CheckCircle2 size={16} /> Review last-session feedback</span>
-                  <span><CheckCircle2 size={16} /> Keep effort near {plan?.effort_target || 6}/10</span>
-                  <span><CheckCircle2 size={16} /> Offer an easier option</span>
-                </div>
-                <div className="trainer-safety-note"><ShieldCheck size={17} /><p>WellPath does not clear a patient for exercise. Stop and follow facility referral or emergency policy when a patient reports a concerning symptom.</p></div>
-              </section>
-
-              <section className="trainer-panel">
-                <div className="trainer-panel-heading"><div><span className="section-kicker">Weekly target</span><h2>{weeklyExercise} of {weeklyTarget} minutes</h2></div><strong>{exerciseProgress}%</strong></div>
-                <div className="progress" role="progressbar" aria-label="Weekly workout goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow={exerciseProgress}><span style={{ width: `${exerciseProgress}%` }} /></div>
-                <div className="trainer-chart-selection" aria-live="polite">
-                  <span>{selectedTrendDay?.day || 'Day'}</span>
-                  <strong>{Number(selectedTrendDay?.exercise) || 0} min</strong>
-                </div>
-                <div className="trainer-exercise-bars" aria-label="Select a day to review exercise minutes">
-                  {recentTrends.map((day, index) => (
-                    <button key={`${day.recordDate}-${index}`} type="button" className={selectedDayIndex === index ? 'selected' : ''} onClick={() => setSelectedDayIndex(index)} aria-label={`${day.day}: ${day.exercise} exercise minutes`} aria-pressed={selectedDayIndex === index}>
-                      <span style={{ height: `${Math.max(12, (day.exercise / maxExercise) * 100)}%` }} /><small>{day.day}</small>
-                    </button>
-                  ))}
-                </div>
-                <p className="panel-note">Shorter sessions and recovery days remain useful parts of a repeatable plan.</p>
-              </section>
-
-              <section className="trainer-panel">
-                <div className="trainer-panel-heading"><div><span className="section-kicker">Current plan</span><h2>{plan?.session_type}</h2></div><button className="text-action" type="button" onClick={() => setActiveSection('plan')}>Edit plan</button></div>
-                <SummaryRow label="Focus" value={plan?.focus || 'Not set'} />
-                <SummaryRow label="Session length" value={`${plan?.duration_minutes || 0} minutes`} />
-                <SummaryRow label="Effort target" value={`${plan?.effort_target || 0}/10`} />
-                <div className="trainer-activity-chips">{plan?.exercises?.map((activity) => <span key={activity}>{activity}</span>)}</div>
-              </section>
-
-              <section className="trainer-panel">
-                <div className="trainer-panel-heading"><div><span className="section-kicker">Patient voice</span><h2>Latest feedback</h2></div><UserCheck size={22} /></div>
-                {latestFeedback ? (
-                  <>
-                    <div className="feedback-score-grid"><FeedbackScore label="Energy" value={latestFeedback.energy} /><FeedbackScore label="Confidence" value={latestFeedback.confidence} /><FeedbackScore label="Difficulty" value={latestFeedback.difficulty} inverse /></div>
-                    <blockquote>{latestFeedback.comment}</blockquote><small>{formatDate(latestFeedback.session_date)}</small>
-                  </>
-                ) : <p className="empty-state">No patient feedback has been shared yet.</p>}
-              </section>
-            </div>
           </>
         )}
 
@@ -473,18 +425,6 @@ function TrainerView({ user, onLogout, theme, setTheme }) {
   );
 }
 
-function TrainerMetric({ id, icon: Icon, label, value, detail, selected, onSelect }) {
-  return (
-    <button className={`trainer-metric-button ${selected ? 'selected' : ''}`} type="button" onClick={onSelect} aria-expanded={selected} aria-controls={`trainer-metric-${id}`} aria-label={`${selected ? 'Close' : 'Open'} ${label} details`}>
-      <span className="trainer-metric-icon"><Icon size={18} /></span>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{detail}</small>
-      <ChevronRight className="trainer-metric-chevron" size={17} aria-hidden="true" />
-    </button>
-  );
-}
-
 function TrainerMetricDetail({ detail, detailRef, onClose, onAction }) {
   const maxValue = Math.max(...detail.data, 1);
   const Icon = detail.icon;
@@ -513,10 +453,6 @@ function TrainerMetricDetail({ detail, detailRef, onClose, onAction }) {
 function FeedbackScore({ label, value, inverse = false }) {
   const tone = inverse ? 6 - Number(value) : Number(value);
   return <div><span>{label}</span><strong>{value}/5</strong><i className={tone >= 4 ? 'good' : tone >= 3 ? 'steady' : 'watch'} style={{ '--score-width': `${Number(value) * 20}%` }} /></div>;
-}
-
-function SummaryRow({ label, value }) {
-  return <div className="summary-line"><strong>{label}</strong><span>{value}</span></div>;
 }
 
 function formatDate(value) {

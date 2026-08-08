@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   Armchair,
@@ -20,6 +20,8 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
+import { AiInsightBox, PersonalizedHint } from './AiInsightBox.jsx';
+import { getMemory } from './aiMemory.js';
 
 function hashString(value) {
   let hash = 0;
@@ -69,7 +71,7 @@ function buildInsightCacheKey(patientData, cardType, card) {
   const signature = hashString(JSON.stringify(request.targetContext));
   // Bump this version (v2 -> v3 ...) whenever the insight style/prompt changes so
   // the browser discards its old saved insights instead of showing stale text.
-  return `wellpath-ai-insight:v4-punchy:${patientData.name || 'patient'}:${cardType}:${card.id}:${signature}`;
+  return `wellpath-ai-insight:v6-useful:${patientData.name || 'patient'}:${cardType}:${card.id}:${signature}`;
 }
 
 function isCacheableInsight(text) {
@@ -118,7 +120,7 @@ function buildInsightPrefetchQueue(scores, kpis) {
 
 // A concrete "next move" per metric that needs attention.
 const NEXT_MOVE_ACTIONS = {
-  bloodPressure: 'Your blood pressure is running high — recheck it when calm and review a lasting pattern with a clinician.',
+  bloodPressure: 'This reading is above your personal target. Recheck it when calm, and review a repeated pattern with a clinician.',
   heartRate: 'Your resting heart rate is outside its usual range — recheck it when rested and watch for a lasting pattern.',
   sleep: 'Your sleep is short — start winding down 30 minutes earlier tonight and keep a steady bedtime.',
   steps: 'You are under your step goal — a brisk 10-minute walk is an easy way to close the gap.',
@@ -160,16 +162,28 @@ function buildBestNextMove(kpis = []) {
   return { kpiId: null, text: 'You are on track across the board — keep your routine steady today.' };
 }
 
-export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, onGenerateAiInsight, onAskAi, aiAnswer, setScreen, onOpenBreakdown }) {
+export function PatientToday({
+  patientId, patientData, scores, kpis, metrics, aiEnabled, onGenerateAiInsight,
+  onOpenBreakdown, uiPreferences,
+}) {
   const recovery = metrics.find((metric) => metric.id === 'recovery');
   const [expandedScore, setExpandedScore] = useState(null);
   const [expandedKpi, setExpandedKpi] = useState(null);
-  const [kpiColumnCount, setKpiColumnCount] = useState(2);
   const [cardInsights, setCardInsights] = useState({});
   const prefetchSignatureRef = useRef('');
   const inFlightInsightsRef = useRef(new Map());
   const focusedScore = scores.find((score) => score.id === expandedScore);
-  const bestNextMove = buildBestNextMove(kpis);
+  const visibleIds = uiPreferences?.visibleMetricIds;
+  const metricOrder = uiPreferences?.metricOrder;
+  const visibleKpis = useMemo(() => {
+    const allowed = visibleIds || kpis.map((kpi) => kpi.id);
+    const order = metricOrder || kpis.map((kpi) => kpi.id);
+    return order
+      .map((id) => kpis.find((kpi) => kpi.id === id))
+      .filter((kpi) => kpi && allowed.includes(kpi.id));
+  }, [kpis, visibleIds, metricOrder]);
+  const bestNextMove = buildBestNextMove(visibleKpis);
+  const personalized = patientId ? getMemory(patientId).length > 0 : false;
   const kpiRows = [];
 
   // From a score's factor, jump to that metric's KPI card: collapse the score,
@@ -183,18 +197,9 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
     }, 80);
   };
 
-  for (let index = 0; index < kpis.length; index += kpiColumnCount) {
-    kpiRows.push(kpis.slice(index, index + kpiColumnCount));
+  for (let index = 0; index < visibleKpis.length; index += 2) {
+    kpiRows.push(visibleKpis.slice(index, index + 2));
   }
-
-  useEffect(() => {
-    const desktopGrid = window.matchMedia('(min-width: 901px)');
-    const syncColumnCount = () => setKpiColumnCount(desktopGrid.matches ? 3 : 2);
-
-    syncColumnCount();
-    desktopGrid.addEventListener('change', syncColumnCount);
-    return () => desktopGrid.removeEventListener('change', syncColumnCount);
-  }, []);
 
   useEffect(() => {
     setCardInsights({});
@@ -203,6 +208,7 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
   }, [patientData.name, aiEnabled]);
 
   const loadCardInsight = async (key, payload, cacheKey) => {
+    if (!aiEnabled) return;
     const currentInsight = cardInsights[key];
     if (
       !onGenerateAiInsight ||
@@ -278,7 +284,7 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
     if (!aiEnabled || !onGenerateAiInsight) return;
 
     let cancelled = false;
-    const cards = buildInsightPrefetchQueue(scores, kpis);
+    const cards = buildInsightPrefetchQueue(scores, visibleKpis);
     const prefetchSignature = cards
       .map(({ type, card }) => buildInsightCacheKey(patientData, type, card))
       .join('|');
@@ -303,14 +309,16 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
     return () => {
       cancelled = true;
     };
-  }, [aiEnabled, patientData.name, scores, kpis, onGenerateAiInsight]);
+  }, [aiEnabled, patientData.name, scores, visibleKpis, onGenerateAiInsight]);
 
   return (
-    <div className="mobile-flow patient-today-web-grid">
-      <section className="patient-score-board" aria-label="Patient wellness scores">
+    <div className="mobile-flow">
+      {uiPreferences?.sections?.wellnessScores !== false && <section className="patient-score-board" aria-label="Patient wellness scores">
         {focusedScore ? (
           <FocusedScoreCard
             score={focusedScore}
+            aiEnabled={aiEnabled}
+            personalized={personalized}
             aiInsight={cardInsights[`score:${focusedScore.id}`]?.text}
             aiStatus={cardInsights[`score:${focusedScore.id}`]?.status}
             onClose={() => setExpandedScore(null)}
@@ -327,9 +335,9 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
-      {bestNextMove.kpiId ? (
+      {uiPreferences?.sections?.nextMove !== false && (bestNextMove.kpiId ? (
         <button
           type="button"
           className="focus-strip focus-strip-actionable"
@@ -355,7 +363,7 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
             <p>{bestNextMove.text}</p>
           </div>
         </section>
-      )}
+      ))}
 
       <div className="mobile-section-title">
         <div>
@@ -374,6 +382,8 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
               <React.Fragment key={row.map((kpi) => kpi.id).join('-')}>
                 <ExpandedKpiCard
                   kpi={expandedInRow}
+                  aiEnabled={aiEnabled}
+                  personalized={personalized}
                   aiInsight={cardInsights[`kpi:${expandedInRow.id}`]?.text}
                   aiStatus={cardInsights[`kpi:${expandedInRow.id}`]?.status}
                   onClose={() => setExpandedKpi(null)}
@@ -392,34 +402,25 @@ export function PatientToday({ patientData, scores, kpis, metrics, aiEnabled, on
         })}
       </div>
 
-      <section className="ai-preview-card">
-        <div className="ai-preview-head">
-          <Sparkles size={18} />
-          <div>
-            <strong>AI insight preview</strong>
-            <p>{aiEnabled ? 'Ask one quick question about today.' : 'AI is off in Settings.'}</p>
-          </div>
-        </div>
-        {recovery && (
-          <AiPromptChips metric={recovery} aiEnabled={aiEnabled} onAskAi={onAskAi} compact />
-        )}
-        {aiEnabled && aiAnswer && (
-          <div className={`ai-answer-panel featured bubble-anim ${aiAnswer.text?.includes('Analyzing your health data') ? 'loading' : ''}`}>
-            <div className="ai-answer-header">
-              <span>{aiAnswer.metric}</span>
-              <h3>{aiAnswer.prompt}</h3>
-            </div>
-            <div className="ai-answer-content">
-              <p>{aiAnswer.text}</p>
-            </div>
-            {aiAnswer.disclaimer && (
-              <div className="ai-disclaimer">
-                <span>⚠️</span> {aiAnswer.disclaimer}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+      {aiEnabled && uiPreferences?.sections?.aiQuestions !== false && (
+        <AiInsightBox
+          title="Ask your AI"
+          aiEnabled={aiEnabled}
+          patientId={patientId}
+          presets={[
+            { label: 'What should I focus on?', question: "Looking at my recent data, what's the single most useful thing to focus on right now?" },
+            { label: "How's my week going?", question: 'How are my main health habits trending this week?' },
+            { label: 'Improve my sleep', question: 'What could I try to improve my sleep?' },
+            { label: 'Choose an activity step', question: 'Which small activity step best fits my recent routine today?' },
+          ]}
+          onAsk={(question) => onGenerateAiInsight({
+            insightType: 'daily',
+            targetId: 'today',
+            targetTitle: 'Today',
+            targetContext: { userQuestion: question },
+          })}
+        />
+      )}
 
       <div className="quiet-disclaimer"><ShieldCheck size={15} /> Lifestyle support only. Not diagnosis or medical advice.</div>
     </div>
@@ -467,7 +468,7 @@ const FACTOR_TO_KPI = {
   'Sedentary-time consistency': 'sedentary',
 };
 
-function FocusedScoreCard({ score, aiInsight, aiStatus, onClose, onFactorClick }) {
+function FocusedScoreCard({ score, aiEnabled, personalized, aiInsight, aiStatus, onClose, onFactorClick }) {
   if (!score) return null;
   const HeaderIcon = getScoreIcon(score.id);
 
@@ -491,13 +492,16 @@ function FocusedScoreCard({ score, aiInsight, aiStatus, onClose, onFactorClick }
 
       <p className="focused-score-description">{score.description}</p>
 
-      <div className="score-ai-insight">
-        <span className="score-ai-icon"><Sparkles size={22} /></span>
-        <div>
-          <strong>AI Insight</strong>
-          <p className={aiStatus === 'loading' ? 'ai-loading-text' : ''}>{aiInsight || 'Generating your AI insight...'}</p>
+      {aiEnabled && (
+        <div className="score-ai-insight">
+          <span className="score-ai-icon"><Sparkles size={22} /></span>
+          <div>
+            <strong>AI Insight</strong>
+            <p className={aiStatus === 'loading' ? 'ai-loading-text' : ''}>{aiInsight || 'Generating your AI insight...'}</p>
+            {personalized && aiStatus === 'ready' && <div className="ai-tailored-row"><PersonalizedHint /></div>}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="focused-score-factors">
         <span>Factors</span>
@@ -590,7 +594,7 @@ function PatientKpiCard({ kpi, onOpen }) {
   );
 }
 
-function ExpandedKpiCard({ kpi, aiInsight, aiStatus, onClose, onViewDetails }) {
+function ExpandedKpiCard({ kpi, aiEnabled, personalized, aiInsight, aiStatus, onClose, onViewDetails }) {
   const Icon = getKpiIcon(kpi.id);
   const progress = kpi.progress ?? 0;
 
@@ -609,41 +613,39 @@ function ExpandedKpiCard({ kpi, aiInsight, aiStatus, onClose, onViewDetails }) {
       </div>
 
       <div className="expanded-kpi-main">
-        <div className="expanded-kpi-summary">
-          <div className="expanded-kpi-value">
-            <strong>{kpi.main}</strong>
-            <span>{kpi.unit}</span>
-            <div className="kpi-progress-ring large" style={{ '--score': `${progress}%`, '--ring-color': kpi.color }}>
-              <strong>{kpi.ringLabel}</strong>
-            </div>
-            <small>{kpi.ringSubtext || kpi.targetLabel}</small>
+        <div className="expanded-kpi-value">
+          <strong>{kpi.main}</strong>
+          <span>{kpi.unit}</span>
+          <div className="kpi-progress-ring large" style={{ '--score': `${progress}%`, '--ring-color': kpi.color }}>
+            <strong>{kpi.ringLabel}</strong>
           </div>
+          <small>{kpi.ringSubtext || kpi.targetLabel}</small>
         </div>
-
-        <div className="expanded-kpi-context">
-          <div className="expanded-kpi-stats">
-            {kpi.rows.map(([label, value]) => (
-              <div key={label}>
-                <span>{label}</span>
-                <strong>{value}</strong>
-              </div>
-            ))}
-          </div>
-
-          <div className="expanded-kpi-insight">
-            <Sparkles size={16} />
-            <div>
-              <strong>AI Insight</strong>
-              <p className={aiStatus === 'loading' ? 'ai-loading-text' : ''}>{aiInsight || 'Generating your AI insight...'}</p>
-            </div>
-          </div>
-        </div>
-
         <div className="expanded-kpi-chart">
           <span>{kpi.chartLabel}</span>
           <BarTrend data={kpi.series} color={kpi.color} unit={kpi.unit} />
         </div>
       </div>
+
+      <div className="expanded-kpi-stats">
+        {kpi.rows.map(([label, value]) => (
+          <div key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+
+      {aiEnabled && (
+        <div className="expanded-kpi-insight">
+          <Sparkles size={16} />
+          <div>
+            <strong>AI Insight</strong>
+            <p className={aiStatus === 'loading' ? 'ai-loading-text' : ''}>{aiInsight || 'Generating your AI insight...'}</p>
+            {personalized && aiStatus === 'ready' && <div className="ai-tailored-row"><PersonalizedHint /></div>}
+          </div>
+        </div>
+      )}
 
       <button className="expanded-kpi-details-link" onClick={(event) => {
         event.stopPropagation();

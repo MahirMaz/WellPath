@@ -1,23 +1,28 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Home, Activity, HeartHandshake, Settings, HeartPulse,
-  LogOut, Moon, Sun, Smile, Droplets, Settings as SettingsIcon, MoreHorizontal, BarChart3, Gauge, Utensils
+  Home, Activity, Dumbbell, Settings, Stethoscope,
+  LogOut, Moon, Sun, Smile, Droplets, Settings as SettingsIcon, MoreHorizontal, Sparkles, Gauge, Utensils
 } from 'lucide-react';
 import { api } from '../api';
 import { PatientAppHeader } from './patient/PatientAppHeader.jsx';
 import { PatientToday } from './patient/PatientToday.jsx';
 import { HealthSummary } from './patient/HealthSummary.jsx';
 import { PartnerPage } from './patient/PartnerPage.jsx';
+import { getMemory } from './patient/aiMemory.js';
+import { ClinicalDataPage } from './patient/ClinicalDataPage.jsx';
 import { PatientSettingsPage } from './patient/PatientSettingsPage.jsx';
 import { MoodPage } from './patient/MoodPage.jsx';
 import { CyclePage } from './patient/CyclePage.jsx';
-import { DataInsights } from './insights/DataInsights.jsx';
+import { AiInsightsPage } from './patient/AiInsightsPage.jsx';
 import { RiskSignal } from './risksignal/RiskSignal.jsx';
 import { NutritionTab } from './nutrition/NutritionTab.jsx';
 import { HealthProfileProvider } from './shared/profileContext.jsx';
 import { buildPatientScores } from '../utils/healthScores.js';
 import { buildPatientKpis, calculateRecoveryScore } from '../utils/patientKpis.js';
 import { useBubbleReveal } from '../utils/useBubbleReveal.js';
+import {
+  loadPatientUiPreferences, normalizePatientUiPreferences, savePatientUiPreferences,
+} from '../utils/patientUiPreferences.js';
 
 // ===== SAMPLE DATA (fallback) =====
 const weeklyTrend = [
@@ -30,7 +35,10 @@ const weeklyTrend = [
   { day: 'Tue', steps: 8700, sleep: 7.1, sleepConsistency: 89, hr: 72, exercise: 45, activeMinutes: 52, caloriesBurned: 2240, sedentaryHours: 6, workoutCount: 1 },
 ];
 
-const defaultSummaryMetrics = ['steps', 'sleep', 'heartRate', 'exercise', 'recovery'];
+const defaultHealthConnections = [
+  { provider: 'apple_health', status: 'not_connected', permissions: [], last_sync: null },
+  { provider: 'health_connect', status: 'not_connected', permissions: [], last_sync: null },
+];
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -52,24 +60,24 @@ function buildSummaryMetrics(patientData, healthLog) {
 
   const aiPromptTemplates = {
     steps: [
-      { id: 'steps_change', label: 'Why did steps change?' },
-      { id: 'steps_focus', label: 'What should I focus on?' },
+      { id: 'steps_change', label: 'What shaped my steps?', question: 'What recent habit pattern may have shaped my step count, and what small action fits today?' },
+      { id: 'steps_focus', label: 'Choose one movement goal', question: 'Which one realistic movement goal best fits my recent activity pattern today?' },
     ],
     sleep: [
-      { id: 'sleep_pattern', label: 'How was my sleep?' },
-      { id: 'sleep_better', label: 'How can I improve tonight?' },
+      { id: 'sleep_pattern', label: 'Spot my sleep pattern', question: 'What simple pattern stands out in my recent sleep history?' },
+      { id: 'sleep_better', label: 'Plan tonight’s wind-down', question: 'Suggest one low-pressure wind-down step based on my recent sleep pattern.' },
     ],
     heartRate: [
-      { id: 'hr_meaning', label: 'What does this trend mean?' },
-      { id: 'hr_context', label: 'What affects this number?' },
+      { id: 'hr_meaning', label: 'Describe the recent pattern', question: 'Describe how my resting heart-rate pattern has changed without diagnosing anything.' },
+      { id: 'hr_context', label: 'Add everyday context', question: 'Which everyday habits can add context to a resting heart-rate reading?' },
     ],
     exercise: [
-      { id: 'exercise_balance', label: 'Was this enough activity?' },
-      { id: 'exercise_next', label: 'What workout fits today?' },
+      { id: 'exercise_balance', label: 'Review my activity balance', question: 'How balanced has my recent exercise routine been compared with my own goal?' },
+      { id: 'exercise_next', label: 'Pick a manageable session', question: 'Suggest one manageable activity session that fits my recent routine today.' },
     ],
     recovery: [
-      { id: 'recovery_score', label: 'Why this recovery score?' },
-      { id: 'recovery_plan', label: 'How do I recover better?' },
+      { id: 'recovery_score', label: 'What shaped recovery?', question: 'Which sleep or movement habit most influenced my recent recovery pattern?' },
+      { id: 'recovery_plan', label: 'Choose a recovery step', question: 'Suggest one gentle recovery habit that fits my recent pattern today.' },
     ],
   };
 
@@ -153,15 +161,24 @@ function buildSummaryMetrics(patientData, healthLog) {
 }
 
 function PatientView({ user, onLogout, theme, setTheme }) {
-  const [screen, setScreen] = useState('dashboard');
+  const initialUiPreferences = useMemo(() => loadPatientUiPreferences(user?.id), [user?.id]);
+  const [screen, setScreen] = useState(initialUiPreferences.startScreen);
   const [healthLog, setHealthLog] = useState(weeklyTrend);
   const [goals, setGoals] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [aiEnabled, setAiEnabled] = useState(true);
-  const [visibleMetrics, setVisibleMetrics] = useState(defaultSummaryMetrics);
+  const aiPreferenceKey = `wellpath:ai-enabled:${user?.id ?? 'patient'}`;
+  const [aiEnabled, setAiEnabled] = useState(() => {
+    try {
+      return window.localStorage.getItem(aiPreferenceKey) !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const [uiPreferences, setUiPreferences] = useState(initialUiPreferences);
   const [aiAnswer, setAiAnswer] = useState(null);
   const [breakdownMetric, setBreakdownMetric] = useState(null);
+  const [healthConnections, setHealthConnections] = useState(defaultHealthConnections);
   const more = useBubbleReveal();
 
   const patientId = user?.patientId;
@@ -177,6 +194,14 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     window.scrollTo(0, 0);
   }, [screen]);
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(aiPreferenceKey, String(aiEnabled));
+    } catch {
+      // The setting still works for this session when storage is unavailable.
+    }
+  }, [aiEnabled, aiPreferenceKey]);
+
   // Open the Breakdown page, optionally focused on a specific KPI's metric.
   const KPI_TO_BREAKDOWN = { calories: 'activeCalories' };
   const openBreakdown = useCallback((kpiId) => {
@@ -187,10 +212,12 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   const fetchPatientData = async () => {
     try {
       setLoading(true);
-      const [dashboard, trends, goalsData] = await Promise.all([
+      const [dashboard, trends, goalsData, connections, serverPreferences] = await Promise.all([
         api.getDashboard(patientId),
         api.getTrends(patientId),
         api.getGoals(patientId),
+        api.getHealthConnections(patientId).catch(() => defaultHealthConnections),
+        api.getPatientPreferences(patientId).catch(() => null),
       ]);
 
       setDashboardData(dashboard);
@@ -199,6 +226,20 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       }
       if (goalsData && goalsData.length > 0) {
         setGoals(goalsData);
+      }
+      if (Array.isArray(connections)) {
+        setHealthConnections(connections);
+      }
+      if (serverPreferences) {
+        const serverUi = serverPreferences.ui_preferences || serverPreferences.uiPreferences;
+        if (serverUi) {
+          const normalized = savePatientUiPreferences(user?.id, normalizePatientUiPreferences(serverUi));
+          setUiPreferences(normalized);
+          setScreen(normalized.startScreen);
+        }
+        if (typeof serverPreferences.ai_enabled === 'boolean') {
+          setAiEnabled(serverPreferences.ai_enabled);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch patient data:', error);
@@ -270,6 +311,26 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   const patientScores = useMemo(() => buildPatientScores(currentPatient, healthLog), [currentPatient, healthLog]);
   const patientKpis = useMemo(() => buildPatientKpis(currentPatient, healthLog), [currentPatient, healthLog]);
 
+  const updateUiPreferences = useCallback((updater) => {
+    setUiPreferences((current) => {
+      const nextValue = typeof updater === 'function' ? updater(current) : updater;
+      const normalized = savePatientUiPreferences(user?.id, nextValue);
+      api.updatePatientPreferences(patientId, { uiPreferences: normalized }).catch(() => {});
+      return normalized;
+    });
+  }, [patientId, user?.id]);
+
+  const updateAiEnabled = useCallback(async (enabled) => {
+    const next = Boolean(enabled);
+    setAiEnabled(next);
+    try {
+      await api.updatePatientPreferences(patientId, { aiEnabled: next });
+    } catch {
+      // The browser preference remains active when the API is unavailable.
+    }
+    return next;
+  }, [patientId]);
+
   // Cycle tracking only applies to some patients, so the tab is conditional
   // (also keeps the nav from getting crowded for everyone else).
   const tracksCycle = String(dashboardData?.gender || '').toLowerCase() === 'female';
@@ -284,9 +345,10 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     ...(tracksCycle ? [['cycle', 'Cycle', Droplets]] : []),
   ];
   const moreNav = [
-    ['insights', 'Insights', BarChart3],
+    ['insights', 'AI', Sparkles],
     ['risk', 'Risk Signal', Gauge],
-    ['partner', 'Partner', HeartHandshake],
+    ['trainer', 'Partner', Dumbbell],
+    ['clinical', 'Health record', Stethoscope],
     ['settings', 'Settings', SettingsIcon],
   ];
 
@@ -309,36 +371,23 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     });
 
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/ai/insights', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+      const data = await api.getAiInsight({
+        patientId,
+        insightType: 'question',
+        targetId: metric.id,
+        targetTitle: metric.label,
+        targetContext: {
+          userQuestion: prompt.question || prompt.label,
+          metric: metric.backendPayload,
         },
-        body: JSON.stringify({
-          patientId: patientId,
-          metricId: metric.id,
-          promptId: prompt.id,
-        }),
       });
 
-      const data = await response.json();
-      
-      if (response.ok) {
-        setAiAnswer({
-          metric: metric.label,
-          prompt: prompt.label,
-          text: data.answer || 'No insights available at this time.',
-          disclaimer: data.disclaimer,
-        });
-      } else {
-        setAiAnswer({
-          metric: metric.label,
-          prompt: prompt.label,
-          text: data.error || 'Failed to generate insights. Please try again.',
-        });
-      }
+      setAiAnswer({
+        metric: metric.label,
+        prompt: prompt.label,
+        text: data.answer || 'No insights are available right now.',
+        disclaimer: data.disclaimer,
+      });
     } catch (error) {
       console.error('AI Error:', error);
       setAiAnswer({
@@ -354,33 +403,38 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       return 'AI insights are turned off. Turn them back on in Settings if you want generated explanations.';
     }
 
-    const token = localStorage.getItem('authToken');
-    const response = await fetch('/api/ai/insights', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        patientId,
-        ...target,
-      }),
-    });
+    // Personalization memory: fold anything the user has told the app about
+    // themselves into every insight, so guidance stays tailored across tabs.
+    const memory = getMemory(patientId);
+    const payload = memory.length
+      ? { ...target, targetContext: { ...(target.targetContext || {}), userMemory: memory } }
+      : target;
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to generate insight.');
-    }
+    const data = await api.getAiInsight({ patientId, ...payload });
 
     return data.answer || "I'm having trouble generating this insight right now. Please try again later.";
   }, [aiEnabled, patientId]);
 
+  const updateHealthConnection = async (provider, updates) => {
+    const saved = await api.updateHealthConnection(patientId, provider, updates);
+    setHealthConnections((items) => [
+      ...items.filter((item) => item.provider !== provider),
+      saved,
+    ]);
+    return saved;
+  };
+
   const addGoal = async (title) => {
     try {
       const newGoal = await api.addGoal(patientId, title, 'Planned');
-      setGoals([...goals, { id: newGoal.id, title: newGoal.title, status: 'Planned' }]);
-    } catch (err) {
-      alert('Failed to add goal: ' + err.message);
+      setGoals((items) => [...items, {
+        id: newGoal.id,
+        title: newGoal.title,
+        status: newGoal.status || 'Planned',
+      }]);
+      return newGoal;
+    } catch (error) {
+      throw new Error(error.message || 'The goal could not be added.');
     }
   };
 
@@ -388,13 +442,25 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     try {
       const newStatus = currentStatus === 'Complete' ? 'In progress' : 'Complete';
       await api.updateGoal(goalId, { status: newStatus });
-      setGoals(goals.map(g => 
-        g.id === goalId ? { ...g, status: newStatus } : g
-      ));
-    } catch (err) {
-      alert('Failed to update goal: ' + err.message);
+      setGoals((items) => items.map((goal) => (
+        goal.id === goalId ? { ...goal, status: newStatus } : goal
+      )));
+      return newStatus;
+    } catch (error) {
+      throw new Error(error.message || 'The goal could not be updated.');
     }
   };
+
+  const deleteGoal = async (goalId) => {
+    try {
+      await api.deleteGoal(goalId);
+      setGoals((items) => items.filter((goal) => goal.id !== goalId));
+    } catch (error) {
+      throw new Error(error.message || 'The goal could not be deleted.');
+    }
+  };
+
+  const submitPatientFeedback = (feedback) => api.addPatientFeedback(patientId, feedback);
 
   if (loading) {
     return (
@@ -409,71 +475,13 @@ function PatientView({ user, onLogout, theme, setTheme }) {
 
   return (
     <HealthProfileProvider initial={initialProfile}>
-    <section className="patient-app-shell">
-      <aside className="patient-web-sidebar" aria-label="Patient workspace navigation">
-        <div className="patient-web-brand">
-          <span><HeartPulse size={22} /></span>
-          <div>
-            <strong>WellPath</strong>
-            <small>Health workspace</small>
-          </div>
-        </div>
-
-        <div className="patient-web-nav-group">
-          <small>Daily health</small>
-          {nav.map(([id, label, Icon]) => (
-            <button
-              key={id}
-              type="button"
-              className={screen === id ? 'active' : ''}
-              onClick={() => { more.close(); setBreakdownMetric(null); setScreen(id); }}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="patient-web-nav-group">
-          <small>Workspace</small>
-          {moreNav.map(([id, label, Icon]) => (
-            <button
-              key={id}
-              type="button"
-              className={screen === id ? 'active' : ''}
-              onClick={() => { more.close(); setBreakdownMetric(null); setScreen(id); }}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="patient-web-sidebar-spacer" />
-        <div className="patient-web-account">
-          <div className="mini-avatar">{(user?.name || 'P').slice(0, 1)}</div>
-          <div>
-            <strong>{user?.name || 'Patient'}</strong>
-            <small>{aiEnabled ? 'AI insights on' : 'AI insights off'}</small>
-          </div>
-        </div>
-        <div className="patient-web-actions">
-          <button type="button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-          </button>
-          <button type="button" onClick={onLogout}>
-            <LogOut size={16} />
-            <span>Sign out</span>
-          </button>
-        </div>
-      </aside>
-
+    <section className={`patient-app-shell density-${uiPreferences.density}${uiPreferences.reduceMotion ? ' reduce-motion' : ''}`}>
       <PatientAppHeader patientData={currentPatient} aiEnabled={aiEnabled} />
       <div className="patient-screen-stage">
         {screen === 'dashboard' && (
-          <PatientToday 
-            patientData={currentPatient} 
+          <PatientToday
+            patientId={patientId}
+            patientData={currentPatient}
             scores={patientScores}
             kpis={patientKpis}
             metrics={metrics} 
@@ -483,10 +491,12 @@ function PatientView({ user, onLogout, theme, setTheme }) {
             aiAnswer={aiAnswer}
             setScreen={setScreen}
             onOpenBreakdown={openBreakdown}
+            uiPreferences={uiPreferences}
           />
         )}
         {screen === 'summary' && (
           <HealthSummary
+            patientId={patientId}
             healthLog={healthLog}
             patientData={currentPatient}
             initialMetricId={breakdownMetric}
@@ -511,35 +521,60 @@ function PatientView({ user, onLogout, theme, setTheme }) {
           />
         )}
         {screen === 'insights' && (
-          <DataInsights />
+          <AiInsightsPage
+            metrics={metrics}
+            aiEnabled={aiEnabled}
+            setAiEnabled={updateAiEnabled}
+            aiAnswer={aiAnswer}
+            onAskAi={askAi}
+            healthLog={healthLog}
+            onGenerateAiInsight={generateDashboardAiInsight}
+          />
         )}
         {screen === 'risk' && (
           <RiskSignal />
         )}
         {screen === 'nutrition' && (
-          <NutritionTab onGoToRisk={() => { setBreakdownMetric(null); setScreen('risk'); }} />
+          <NutritionTab
+            patientId={patientId}
+            aiEnabled={aiEnabled}
+            onGenerateAiInsight={generateDashboardAiInsight}
+            onGoToRisk={() => { setBreakdownMetric(null); setScreen('risk'); }}
+            healthLog={healthLog}
+          />
         )}
-        {screen === 'partner' && (
+        {screen === 'trainer' && (
           <PartnerPage
-            patientData={currentPatient} 
-            healthLog={healthLog} 
-            goals={goals} 
-            setGoals={setGoals}
+            patientData={currentPatient}
+            healthLog={healthLog}
+            goals={goals}
             onAddGoal={addGoal}
             onToggleGoal={toggleGoalStatus}
+            onDeleteGoal={deleteGoal}
+            onSubmitFeedback={submitPatientFeedback}
+          />
+        )}
+        {screen === 'clinical' && (
+          <ClinicalDataPage
+            patientId={patientId}
+            patientData={currentPatient}
+            healthLog={healthLog}
           />
         )}
         {screen === 'settings' && (
-          <PatientSettingsPage 
-            metrics={metrics} 
-            visibleMetrics={visibleMetrics} 
-            setVisibleMetrics={setVisibleMetrics} 
-            aiEnabled={aiEnabled} 
-            setAiEnabled={setAiEnabled} 
+          <PatientSettingsPage
+            patientId={patientId}
+            kpis={patientKpis}
+            uiPreferences={uiPreferences}
+            setUiPreferences={updateUiPreferences}
+            aiEnabled={aiEnabled}
+            setAiEnabled={updateAiEnabled}
             theme={theme} 
             setTheme={setTheme} 
             onLogout={onLogout}
             user={user}
+            healthConnections={healthConnections}
+            onUpdateHealthConnection={updateHealthConnection}
           />
         )}
       </div>

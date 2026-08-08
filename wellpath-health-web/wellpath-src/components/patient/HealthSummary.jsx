@@ -2,59 +2,9 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link2, Sparkles, Target, ChevronDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { calculateRecoveryScore } from '../../utils/patientKpis.js';
 import { useBubbleReveal } from '../../utils/useBubbleReveal.js';
-
-// ===== Predictive analysis =====
-// Metrics we project forward. dir 'high' = rising is good, 'low' = falling is good.
-const FORECAST_METRICS = [
-  { key: 'sleep', label: 'Sleep', unit: 'hrs', dir: 'high', digits: 1 },
-  { key: 'steps', label: 'Steps', unit: '', dir: 'high', digits: 0 },
-  { key: 'activeMinutes', label: 'Active minutes', unit: 'min', dir: 'high', digits: 0 },
-  { key: 'sedentaryHours', label: 'Sitting time', unit: 'hrs', dir: 'low', digits: 1 },
-  { key: 'hr', label: 'Resting HR', unit: 'bpm', dir: 'low', digits: 0 },
-  { key: 'systolicBp', label: 'Systolic BP', unit: 'mmHg', dir: 'low', digits: 0 },
-];
-
-// Least-squares trend over the 30-day history, projected 7 days ahead.
-function buildProjections(healthLog) {
-  const projections = [];
-  for (const metric of FORECAST_METRICS) {
-    const values = healthLog
-      .map((d) => Number(d[metric.key]))
-      .filter((v) => Number.isFinite(v));
-    if (values.length < 10) continue;
-
-    const n = values.length;
-    const meanX = (n - 1) / 2;
-    const meanY = values.reduce((s, v) => s + v, 0) / n;
-    let numer = 0; let den = 0;
-    values.forEach((y, x) => { numer += (x - meanX) * (y - meanY); den += (x - meanX) ** 2; });
-    const slope = den ? numer / den : 0;
-
-    const last7 = values.slice(-7);
-    const currentAvg = last7.reduce((s, v) => s + v, 0) / last7.length;
-    // Projected average across the next 7 days on the fitted line.
-    const projectedAvg = meanY + slope * (n + 3 - meanX);
-    const change = projectedAvg - currentAvg;
-    const relChange = currentAvg ? Math.abs(change / currentAvg) : 0;
-    const direction = relChange < 0.015 ? 'flat' : change > 0 ? 'up' : 'down';
-    const tone = direction === 'flat' ? 'neutral'
-      : (metric.dir === 'high') === (change > 0) ? 'good' : 'bad';
-
-    projections.push({
-      ...metric,
-      currentAvg,
-      projectedAvg,
-      change,
-      direction,
-      tone,
-      notable: relChange >= 0.015,
-    });
-  }
-  // Most-changing first so the interesting ones lead.
-  return projections.sort((a, b) => Math.abs(b.change / (b.currentAvg || 1)) - Math.abs(a.change / (a.currentAvg || 1)));
-}
-
-const fmtForecastVal = (v, digits) => (digits ? Number(v).toFixed(digits) : Math.round(v).toLocaleString());
+import { PersonalizedHint } from './AiInsightBox.jsx';
+import { getMemory } from './aiMemory.js';
+import { buildRecentComparisons, formatTrendValue } from '../../utils/trendPatterns.js';
 
 const METRIC_COLORS = {
   steps: '#35d48d', sleep: '#8b7cf6', heartRate: '#ff5f7a', exercise: '#f59e0b',
@@ -265,7 +215,8 @@ function clampWindow(start, end, total, minLen = MIN_ZOOM_DAYS) {
   return { start: s, end: s + len - 1 };
 }
 
-export function HealthSummary({ healthLog = [], patientData = {}, initialMetricId = null, aiEnabled = true, onGenerateAiInsight }) {
+export function HealthSummary({ patientId = null, healthLog = [], patientData = {}, initialMetricId = null, aiEnabled = true, onGenerateAiInsight }) {
+  const personalized = patientId ? getMemory(patientId).length > 0 : false;
   const configs = metricConfigs(patientData);
   const validInitial = configs.some((c) => c.id === initialMetricId) ? initialMetricId : 'steps';
   const [selectedId, setSelectedId] = useState(validInitial);
@@ -290,37 +241,34 @@ export function HealthSummary({ healthLog = [], patientData = {}, initialMetricI
 
   const visibleLog = useMemo(() => healthLog.slice(view.start, view.end + 1), [healthLog, view]);
 
-  // Predictive analysis: project recent trends (last ~45 days) 7 days out.
-  const projections = useMemo(() => buildProjections(healthLog.slice(-45)), [healthLog]);
-  const shownProjections = projections.slice(0, 4);
-  const [forecast, setForecast] = useState(null);
-  const [forecastLoading, setForecastLoading] = useState(false);
+  const comparisons = useMemo(() => buildRecentComparisons(healthLog.slice(-45)), [healthLog]);
+  const shownComparisons = comparisons.slice(0, 4);
+  const [patternInsight, setPatternInsight] = useState(null);
+  const [patternLoading, setPatternLoading] = useState(false);
 
-  const generateForecast = async () => {
-    if (!aiEnabled || !onGenerateAiInsight || forecastLoading) return;
-    setForecastLoading(true);
-    setForecast(null);
+  const explainPatterns = async () => {
+    if (!aiEnabled || !onGenerateAiInsight || patternLoading) return;
+    setPatternLoading(true);
+    setPatternInsight(null);
     try {
       const text = await onGenerateAiInsight({
-        insightType: 'prediction',
-        targetId: 'forecast',
-        targetTitle: 'Next-week forecast',
+        insightType: 'trend',
+        targetId: 'recent-comparison',
+        targetTitle: 'Recent direction',
         targetContext: {
-          horizonDays: 7,
-          projections: projections.map((p) => ({
-            metric: p.label,
-            currentWeeklyAvg: Number(fmtForecastVal(p.currentAvg, p.digits).replace(/,/g, '')),
-            projectedWeeklyAvg: Number(fmtForecastVal(p.projectedAvg, p.digits).replace(/,/g, '')),
-            direction: p.direction,
-            assessment: p.tone,
+          comparisons: comparisons.map((item) => ({
+            metric: item.label,
+            recentSevenDayAverage: Number(formatTrendValue(item.recentAverage, item.digits).replace(/,/g, '')),
+            previousSevenDayAverage: Number(formatTrendValue(item.previousAverage, item.digits).replace(/,/g, '')),
+            direction: item.direction,
           })),
         },
       });
-      setForecast(text);
-    } catch (error) {
-      setForecast("I'm having trouble generating a forecast right now. Please try again later.");
+      setPatternInsight(text);
+    } catch {
+      setPatternInsight('The explanation is unavailable right now. The comparison cards still show your recent history.');
     } finally {
-      setForecastLoading(false);
+      setPatternLoading(false);
     }
   };
 
@@ -496,41 +444,41 @@ export function HealthSummary({ healthLog = [], patientData = {}, initialMetricI
 
       <div className="mobile-section-title">
         <div>
-          <span>Where your last 30 days are heading</span>
-          <h2>Predictive analysis</h2>
+          <span>Consistent patterns in your last 30 days</span>
+          <h2>Recent trends</h2>
         </div>
         <TrendingUp size={18} />
       </div>
 
       <section className="ai-brief-card">
-        <p>Projected next-week values if your current pattern holds.</p>
-        {shownProjections.length ? (
+        <p>Which habits are consistently rising, falling, or holding steady.</p>
+        {shownComparisons.length ? (
           <div className="forecast-grid">
-            {shownProjections.map((p) => {
-              const Icon = p.direction === 'flat' ? Minus : p.direction === 'up' ? TrendingUp : TrendingDown;
+            {shownComparisons.map((item) => {
+              const Icon = item.direction === 'flat' ? Minus : item.direction === 'up' ? TrendingUp : TrendingDown;
+              const word = item.direction === 'flat' ? 'about the same' : item.direction === 'up' ? 'up from prior week' : 'down from prior week';
               return (
-                <div className={`forecast-card tone-${p.tone}`} key={p.key}>
-                  <span className="forecast-label">{p.label}</span>
-                  <strong>
-                    {fmtForecastVal(p.currentAvg, p.digits)} <Icon size={13} /> {fmtForecastVal(p.projectedAvg, p.digits)}{p.unit ? ` ${p.unit}` : ''}
-                  </strong>
-                  <small>{p.direction === 'flat' ? 'holding steady' : 'next-week estimate'}</small>
+                <div className={`forecast-card tone-${item.tone}`} key={item.key}>
+                  <span className="forecast-label">{item.label}</span>
+                  <strong>{formatTrendValue(item.recentAverage, item.digits)}{item.unit ? ` ${item.unit}` : ''}</strong>
+                  <small><Icon size={12} /> {word}</small>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p>Not enough history yet to project trends.</p>
+          <p>Not enough history yet to spot trends.</p>
         )}
 
-        {forecast ? (
-          <div className="forecast-ai-text"><Sparkles size={14} /><p>{forecast}</p></div>
-        ) : forecastLoading ? (
-          <div className="forecast-ai-text"><Sparkles size={14} /><p className="ai-loading-text">Projecting your patterns forward...</p></div>
+        {patternInsight ? (
+          <div className="forecast-ai-text"><Sparkles size={14} /><p>{patternInsight}</p></div>
+        ) : patternLoading ? (
+          <div className="forecast-ai-text"><Sparkles size={14} /><p className="ai-loading-text">Reading your recent trends...</p></div>
         ) : null}
-        {aiEnabled && onGenerateAiInsight && !forecastLoading && shownProjections.length > 0 && (
-          <button type="button" className="mood-ai-btn" onClick={generateForecast}>
-            {forecast ? 'Regenerate forecast' : 'Generate AI forecast'}
+        {patternInsight && personalized && <PersonalizedHint />}
+        {aiEnabled && onGenerateAiInsight && !patternLoading && shownComparisons.length > 0 && (
+          <button type="button" className="mood-ai-btn" onClick={explainPatterns}>
+            {patternInsight ? 'Refresh' : 'Explain my trends'}
           </button>
         )}
       </section>

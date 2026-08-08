@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Gauge, ShieldAlert, ArrowUp, ArrowDown, RotateCcw, Info, Utensils, Pencil, Check } from 'lucide-react';
 import { modelSet, computeCondition } from './riskModel.js';
 import { useHealthProfile } from '../shared/profileContext.jsx';
+import './risksignal.css';
 
 const BANDS = {
   lower:   { label: 'Lower-than-typical', cls: 'lower' },

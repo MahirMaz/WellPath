@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 import { Sparkline } from './patient/Sparkline.jsx';
+import ClinicianDashboard from './clinician/ClinicianDashboard.jsx';
 
 const providerTabs = [
   { id: 'Overview', icon: LayoutDashboard, description: 'A concise view of current lifestyle trends and review needs.' },
@@ -212,6 +213,16 @@ function ClinicianView({ user, onLogout, theme, setTheme }) {
     }
   };
 
+  const submitPatientSearch = async (event) => {
+    event.preventDefault();
+    const normalized = query.trim().toLowerCase();
+    if (normalized) {
+      const match = patients.find((patient) => patient.full_name.toLowerCase().includes(normalized));
+      if (match) await loadPatient(match);
+    }
+    setActiveTab('Patients');
+  };
+
   if (loading) {
     return <div className="provider-shell"><div className="loading-center" role="status">Loading clinician workspace...</div></div>;
   }
@@ -265,6 +276,12 @@ function ClinicianView({ user, onLogout, theme, setTheme }) {
             <h1>{activeTab === 'Overview' ? 'Clinician Trend Review' : activeTab}</h1>
             <p>{activeTabInfo.description}</p>
           </div>
+          <form className="provider-global-search" onSubmit={submitPatientSearch}>
+            <Search size={16} />
+            <label className="sr-only" htmlFor="clinician-patient-search">Search patients</label>
+            <input id="clinician-patient-search" list="clinician-patient-options" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search patients" />
+            <datalist id="clinician-patient-options">{patients.map((patient) => <option key={patient.patient_id} value={patient.full_name} />)}</datalist>
+          </form>
           <div className="provider-actions">
             <div className="provider-review-context"><UserCheck size={17} /><div><span>Reviewing</span><strong>{selectedPatient?.full_name || 'No patient selected'}</strong></div></div>
             <button type="button" onClick={() => setActiveTab('Patients')}><Users size={16} /> Patient list</button>
@@ -282,15 +299,20 @@ function ClinicianView({ user, onLogout, theme, setTheme }) {
         {actionStatus && <p className="provider-action-status" role="status">{actionStatus}</p>}
 
         {activeTab === 'Overview' && (
-          <OverviewTab
+          <ClinicianDashboard
             patients={patients}
             selectedPatient={selectedPatient}
             selectedHealth={selectedHealth}
+            trends={trends}
             signals={signals}
             averages={averages}
+            carePlan={carePlan}
+            trendRange={trendRange}
+            setTrendRange={setTrendRange}
             onSelectPatient={loadPatient}
             onOpenTab={setActiveTab}
-            carePlan={carePlan}
+            onUpdateSignal={updateSignalRecord}
+            savingAction={savingAction}
           />
         )}
         {activeTab === 'Patients' && (
@@ -323,36 +345,6 @@ function ClinicianView({ user, onLogout, theme, setTheme }) {
         )}
       </main>
     </div>
-  );
-}
-
-function OverviewTab({ patients, selectedPatient, selectedHealth, signals, averages, onSelectPatient, onOpenTab, carePlan }) {
-  const openSignals = signals.filter((signal) => signal.status !== 'resolved');
-  const unassignedSignals = openSignals.filter((signal) => !signal.assigned_to);
-  return (
-    <>
-      <div className="provider-metrics">
-        <MetricSummary icon={Users} label="Patients" value={patients.length} detail="shared records" />
-        <MetricSummary icon={Activity} label="Average score" value={averages.score} detail="lifestyle summary" />
-        <MetricSummary icon={ShieldAlert} label="Open reviews" value={openSignals.length} detail="non-diagnostic queue" tone="coral" />
-        <MetricSummary icon={UserCheck} label="Unassigned" value={unassignedSignals.length} detail="needs an owner" tone="blue" />
-      </div>
-      <div className="provider-grid overview-grid">
-        <Panel title="Patient overview">
-          <PatientList patients={patients.slice(0, 5)} selectedPatient={selectedPatient} onSelectPatient={onSelectPatient} />
-          <button className="text-action" type="button" onClick={() => onOpenTab('Patients')}>Open patient directory</button>
-        </Panel>
-        <Panel title={selectedPatient ? selectedPatient.full_name : 'Selected patient'} wide>
-          <ProfileSummary patient={selectedPatient} health={selectedHealth} />
-        </Panel>
-        <Panel title="Recommendation summary">
-          <p className="panel-note">{recommendationFor(selectedHealth)}</p>
-          <SummaryLine label="Plan status" value={carePlan?.status || 'Not set'} />
-          <SummaryLine label="Next review" value={carePlan?.review_date ? formatReviewDate(carePlan.review_date) : 'Not scheduled'} />
-          <button className="text-action" type="button" onClick={() => onOpenTab('Plans')}>Review goals and plans</button>
-        </Panel>
-      </div>
-    </>
   );
 }
 
@@ -584,17 +576,6 @@ function ClinicianNotes({ notes, onAddNote, saving }) {
 
 function Panel({ title, wide = false, children }) {
   return <section className={`panel ${wide ? 'wide' : ''}`}><h3>{title}</h3>{children}</section>;
-}
-
-function MetricSummary({ icon: Icon, label, value, detail, tone = '' }) {
-  return (
-    <article className={`provider-metric-card ${tone}`}>
-      <Icon size={18} />
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{detail}</small>
-    </article>
-  );
 }
 
 function PatientList({ patients, selectedPatient, onSelectPatient }) {

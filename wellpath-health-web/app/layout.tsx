@@ -7,6 +7,12 @@ import "../wellpath-src/components/survey/survey.css";
 import "../wellpath-src/components/insights/insights.css";
 import "../wellpath-src/components/nutrition/nutrition.css";
 import "../wellpath-src/components/risksignal/risksignal.css";
+import "../wellpath-src/styles/role-refinements.css";
+import "../wellpath-src/styles/trainer-workspace.css";
+import "../wellpath-src/styles/trainer-workspace-extra.css";
+import "../wellpath-src/styles/clinician-workflow.css";
+import "../wellpath-src/styles/clinician-responsive.css";
+import "../wellpath-src/styles/pro-workspaces.css";
 import "./web-overrides.css";
 
 const geistSans = Geist({

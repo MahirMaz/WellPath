@@ -1,38 +1,81 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Bot, CheckCircle2, Database, EyeOff, Link2, LogOut, Moon, RefreshCw,
-  Settings as SettingsIcon, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Sun,
+  ArrowDown, ArrowUp, Bot, CheckCircle2, Database, EyeOff, LayoutGrid,
+  Link2, LogOut, Moon, RefreshCw, Settings as SettingsIcon, ShieldCheck,
+  SlidersHorizontal, Smartphone, Sparkles, Sun,
 } from 'lucide-react';
 import {
   getHealthBridgeStatus, openHealthPermissionSettings, requestHealthPermissions, syncHealthData,
 } from '../../integrations/healthBridge.js';
+import { PATIENT_KPI_OPTIONS, PATIENT_START_SCREENS } from '../../utils/patientUiPreferences.js';
 
 const connectionLabels = {
   apple_health: 'Apple Health',
   health_connect: 'Health Connect',
 };
 
+const sectionOptions = [
+  { id: 'wellnessScores', label: 'Wellness score strip' },
+  { id: 'nextMove', label: 'Best next move' },
+  { id: 'aiQuestions', label: 'AI quick questions' },
+];
+
 export function PatientSettingsPage({
-  metrics, visibleMetrics, setVisibleMetrics, aiEnabled, setAiEnabled, theme, setTheme,
+  kpis = [], uiPreferences, setUiPreferences, aiEnabled, setAiEnabled, theme, setTheme,
   onLogout, user, healthConnections = [], onUpdateHealthConnection,
 }) {
   const [preferenceMessage, setPreferenceMessage] = useState('');
   const [connectionMessage, setConnectionMessage] = useState('');
   const [connectionBusy, setConnectionBusy] = useState(false);
-  const bridge = useMemo(getHealthBridgeStatus, []);
+  const bridge = useMemo(() => getHealthBridgeStatus(), []);
+  const labels = useMemo(() => new Map([
+    ...PATIENT_KPI_OPTIONS.map((item) => [item.id, item.label]),
+    ...kpis.map((item) => [item.id, item.title]),
+  ]), [kpis]);
+
+  const visibleIds = uiPreferences.visibleMetricIds;
+  const orderedOptions = uiPreferences.metricOrder.map((id) => ({ id, label: labels.get(id) || id }));
+
+  const updatePreferences = (updater, message = 'Display preferences saved.') => {
+    setUiPreferences(updater);
+    setPreferenceMessage(message);
+  };
 
   const toggleMetric = (metricId) => {
-    setVisibleMetrics((items) => {
-      if (items.includes(metricId)) return items.length > 1 ? items.filter((item) => item !== metricId) : items;
-      return [...items, metricId];
+    updatePreferences((current) => {
+      const visible = current.visibleMetricIds;
+      if (visible.includes(metricId)) {
+        if (visible.length === 1) return current;
+        return { ...current, visibleMetricIds: visible.filter((id) => id !== metricId) };
+      }
+      return { ...current, visibleMetricIds: [...visible, metricId] };
     });
   };
 
+  const moveMetric = (metricId, direction) => {
+    updatePreferences((current) => {
+      const order = [...current.metricOrder];
+      const index = order.indexOf(metricId);
+      const destination = index + direction;
+      if (index < 0 || destination < 0 || destination >= order.length) return current;
+      [order[index], order[destination]] = [order[destination], order[index]];
+      return { ...current, metricOrder: order };
+    }, 'Card order saved.');
+  };
+
+  const toggleSection = (sectionId) => {
+    updatePreferences((current) => ({
+      ...current,
+      sections: { ...current.sections, [sectionId]: !current.sections[sectionId] },
+    }));
+  };
+
   const toggleAi = async () => {
+    const next = !aiEnabled;
     setPreferenceMessage('Saving AI preference...');
     try {
-      await setAiEnabled(!aiEnabled);
-      setPreferenceMessage(`AI Insights turned ${aiEnabled ? 'off' : 'on'}.`);
+      await setAiEnabled(next);
+      setPreferenceMessage(`AI Insights turned ${next ? 'on' : 'off'}.`);
     } catch (error) {
       setPreferenceMessage(error.message || 'The AI preference could not be saved.');
     }
@@ -47,10 +90,9 @@ export function PatientSettingsPage({
         setConnectionMessage(result.message);
         return;
       }
-      const provider = bridge.provider;
-      if (provider) {
-        await onUpdateHealthConnection(provider, {
-          status: result.status === 'authorized' || result.status === 'connected' ? 'connected' : 'not_connected',
+      if (bridge.provider) {
+        await onUpdateHealthConnection(bridge.provider, {
+          status: ['authorized', 'connected'].includes(result.status) ? 'connected' : 'not_connected',
           permissions: result.permissions || bridge.requestedReadTypes,
           last_sync: result.lastSync || null,
         });
@@ -97,6 +139,64 @@ export function PatientSettingsPage({
         <div><span>Personalize</span><h2>Settings</h2></div>
       </div>
 
+      <section className="settings-panel settings-customize-panel">
+        <div className="settings-heading-row">
+          <h3><LayoutGrid size={18} /> Today screen</h3>
+          <span className="settings-count">{visibleIds.length} visible</span>
+        </div>
+        <p>Choose which cards matter to you and put the most useful ones first.</p>
+        <div className="settings-card-order">
+          {orderedOptions.map((metric, index) => (
+            <div className="settings-card-row" key={metric.id}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={visibleIds.includes(metric.id)}
+                  disabled={visibleIds.length === 1 && visibleIds.includes(metric.id)}
+                  onChange={() => toggleMetric(metric.id)}
+                />
+                <span>{metric.label}</span>
+              </label>
+              <div className="reorder-actions">
+                <button type="button" onClick={() => moveMetric(metric.id, -1)} disabled={index === 0} aria-label={`Move ${metric.label} up`}><ArrowUp size={15} /></button>
+                <button type="button" onClick={() => moveMetric(metric.id, 1)} disabled={index === orderedOptions.length - 1} aria-label={`Move ${metric.label} down`}><ArrowDown size={15} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="settings-panel">
+        <h3><SlidersHorizontal size={18} /> Layout options</h3>
+        {sectionOptions.map((option) => (
+          <label className="setting-row" key={option.id}>
+            <span>{option.label}</span>
+            <input type="checkbox" checked={uiPreferences.sections[option.id]} onChange={() => toggleSection(option.id)} />
+          </label>
+        ))}
+        <div className="setting-control-block">
+          <span>Card spacing</span>
+          <div className="settings-segmented" role="group" aria-label="Card spacing">
+            {['comfortable', 'compact'].map((density) => (
+              <button key={density} type="button" className={uiPreferences.density === density ? 'active' : ''} onClick={() => updatePreferences((current) => ({ ...current, density }))}>
+                {density[0].toUpperCase() + density.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="setting-control-block">
+          <span>Open the app on</span>
+          <select aria-label="Default start screen" value={uiPreferences.startScreen} onChange={(event) => updatePreferences((current) => ({ ...current, startScreen: event.target.value }), 'Start screen saved.')}>
+            {PATIENT_START_SCREENS.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}
+          </select>
+        </div>
+        <label className="setting-row">
+          <span>Reduce animations</span>
+          <input type="checkbox" checked={uiPreferences.reduceMotion} onChange={() => updatePreferences((current) => ({ ...current, reduceMotion: !current.reduceMotion }), 'Animation preference saved.')} />
+        </label>
+        {preferenceMessage && <p className="form-feedback" role="status">{preferenceMessage}</p>}
+      </section>
+
       <section className="ai-insights-hero settings-ai-hero">
         <div className="ai-orb"><Bot size={24} /></div>
         <span>AI Insights</span>
@@ -106,7 +206,6 @@ export function PatientSettingsPage({
           {aiEnabled ? <Sparkles size={16} /> : <EyeOff size={16} />}
           {aiEnabled ? 'AI on' : 'AI off'}
         </button>
-        {preferenceMessage && <p className="form-feedback" role="status">{preferenceMessage}</p>}
       </section>
 
       <section className="settings-panel health-connections-panel">
@@ -134,56 +233,25 @@ export function PatientSettingsPage({
             </div>
           ))}
         </div>
-        <p>WellPath requests read-only access only to the data types used in your summary. Permission is controlled by Apple Health or Health Connect and can be revoked there.</p>
+        <p>WellPath requests read-only access only to the data types used in your summary. Permission stays under Apple Health or Health Connect control.</p>
         <div className="connection-actions">
-          <button className="secondary-btn" type="button" onClick={connectHealthSource} disabled={connectionBusy || !bridge.available}>
-            <Link2 size={16} /> Connect this device
-          </button>
-          {activeConnection?.status === 'connected' && (
-            <button className="secondary-btn" type="button" onClick={syncConnection} disabled={connectionBusy}>
-              <RefreshCw size={16} /> Sync now
-            </button>
-          )}
-          {bridge.available && (
-            <button className="text-action" type="button" onClick={openHealthPermissionSettings}>Manage access</button>
-          )}
+          <button className="secondary-btn" type="button" onClick={connectHealthSource} disabled={connectionBusy || !bridge.available}><Link2 size={16} /> Connect this device</button>
+          {activeConnection?.status === 'connected' && <button className="secondary-btn" type="button" onClick={syncConnection} disabled={connectionBusy}><RefreshCw size={16} /> Sync now</button>}
+          {bridge.available && <button className="text-action" type="button" onClick={openHealthPermissionSettings}>Manage access</button>}
         </div>
-        {!bridge.available && (
-          <p className="connection-help"><Smartphone size={15} />
-            {bridge.platform === 'web'
-              ? 'Open this screen in the installed iOS or Android build to request system health permissions.'
-              : 'This app wrapper is installed, but the platform health permission module must be completed before device data can sync.'}
-          </p>
-        )}
+        {!bridge.available && <p className="connection-help"><Smartphone size={15} /> Open this screen in the installed iOS or Android build to request system health permissions.</p>}
         {connectionMessage && <p className="form-feedback" role="status">{connectionMessage}</p>}
       </section>
 
       <section className="settings-panel">
-        <h3><SlidersHorizontal size={18} /> Summary cards</h3>
-        {metrics.map((metric) => (
-          <label className="setting-row" key={metric.id}>
-            <span>{metric.label}</span>
-            <input
-              type="checkbox"
-              checked={visibleMetrics.includes(metric.id)}
-              disabled={visibleMetrics.length === 1 && visibleMetrics.includes(metric.id)}
-              onChange={() => toggleMetric(metric.id)}
-            />
-          </label>
-        ))}
-        <p>Keep at least one card visible. Your card choices stay on this device.</p>
-      </section>
-
-      <section className="settings-panel">
         <h3><ShieldCheck size={18} /> Privacy and control</h3>
-        <p>Synced cards are read-only. AI requests are logged without storing the generated answer, and trainer sharing excludes private mood and AI conversations.</p>
+        <p>Synced cards are read-only. Trainer sharing excludes private mood entries, health records, and AI conversations.</p>
       </section>
 
       <section className="settings-panel">
         <h3><SettingsIcon size={18} /> App controls</h3>
         <button className="settings-action" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} type="button">
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          Switch to {theme === 'dark' ? 'light' : 'dark'} mode
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />} Switch to {theme === 'dark' ? 'light' : 'dark'} mode
         </button>
         <button className="settings-action" onClick={onLogout} type="button"><LogOut size={16} /> Sign out</button>
         <div className="setting-row"><span>Logged in as</span><strong>{user?.name}</strong></div>

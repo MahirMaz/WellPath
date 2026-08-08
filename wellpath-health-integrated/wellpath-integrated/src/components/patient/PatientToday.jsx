@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   Armchair,
@@ -120,7 +120,7 @@ function buildInsightPrefetchQueue(scores, kpis) {
 
 // A concrete "next move" per metric that needs attention.
 const NEXT_MOVE_ACTIONS = {
-  bloodPressure: 'Your blood pressure is running high — recheck it when calm and review a lasting pattern with a clinician.',
+  bloodPressure: 'This reading is above your personal target. Recheck it when calm, and review a repeated pattern with a clinician.',
   heartRate: 'Your resting heart rate is outside its usual range — recheck it when rested and watch for a lasting pattern.',
   sleep: 'Your sleep is short — start winding down 30 minutes earlier tonight and keep a steady bedtime.',
   steps: 'You are under your step goal — a brisk 10-minute walk is an easy way to close the gap.',
@@ -162,7 +162,10 @@ function buildBestNextMove(kpis = []) {
   return { kpiId: null, text: 'You are on track across the board — keep your routine steady today.' };
 }
 
-export function PatientToday({ patientId, patientData, scores, kpis, metrics, aiEnabled, onGenerateAiInsight, onAskAi, aiAnswer, setScreen, onOpenBreakdown }) {
+export function PatientToday({
+  patientId, patientData, scores, kpis, metrics, aiEnabled, onGenerateAiInsight,
+  onOpenBreakdown, uiPreferences,
+}) {
   const recovery = metrics.find((metric) => metric.id === 'recovery');
   const [expandedScore, setExpandedScore] = useState(null);
   const [expandedKpi, setExpandedKpi] = useState(null);
@@ -170,7 +173,16 @@ export function PatientToday({ patientId, patientData, scores, kpis, metrics, ai
   const prefetchSignatureRef = useRef('');
   const inFlightInsightsRef = useRef(new Map());
   const focusedScore = scores.find((score) => score.id === expandedScore);
-  const bestNextMove = buildBestNextMove(kpis);
+  const visibleIds = uiPreferences?.visibleMetricIds;
+  const metricOrder = uiPreferences?.metricOrder;
+  const visibleKpis = useMemo(() => {
+    const allowed = visibleIds || kpis.map((kpi) => kpi.id);
+    const order = metricOrder || kpis.map((kpi) => kpi.id);
+    return order
+      .map((id) => kpis.find((kpi) => kpi.id === id))
+      .filter((kpi) => kpi && allowed.includes(kpi.id));
+  }, [kpis, visibleIds, metricOrder]);
+  const bestNextMove = buildBestNextMove(visibleKpis);
   const personalized = patientId ? getMemory(patientId).length > 0 : false;
   const kpiRows = [];
 
@@ -185,8 +197,8 @@ export function PatientToday({ patientId, patientData, scores, kpis, metrics, ai
     }, 80);
   };
 
-  for (let index = 0; index < kpis.length; index += 2) {
-    kpiRows.push(kpis.slice(index, index + 2));
+  for (let index = 0; index < visibleKpis.length; index += 2) {
+    kpiRows.push(visibleKpis.slice(index, index + 2));
   }
 
   useEffect(() => {
@@ -272,7 +284,7 @@ export function PatientToday({ patientId, patientData, scores, kpis, metrics, ai
     if (!aiEnabled || !onGenerateAiInsight) return;
 
     let cancelled = false;
-    const cards = buildInsightPrefetchQueue(scores, kpis);
+    const cards = buildInsightPrefetchQueue(scores, visibleKpis);
     const prefetchSignature = cards
       .map(({ type, card }) => buildInsightCacheKey(patientData, type, card))
       .join('|');
@@ -297,11 +309,11 @@ export function PatientToday({ patientId, patientData, scores, kpis, metrics, ai
     return () => {
       cancelled = true;
     };
-  }, [aiEnabled, patientData.name, scores, kpis, onGenerateAiInsight]);
+  }, [aiEnabled, patientData.name, scores, visibleKpis, onGenerateAiInsight]);
 
   return (
     <div className="mobile-flow">
-      <section className="patient-score-board" aria-label="Patient wellness scores">
+      {uiPreferences?.sections?.wellnessScores !== false && <section className="patient-score-board" aria-label="Patient wellness scores">
         {focusedScore ? (
           <FocusedScoreCard
             score={focusedScore}
@@ -323,9 +335,9 @@ export function PatientToday({ patientId, patientData, scores, kpis, metrics, ai
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
-      {bestNextMove.kpiId ? (
+      {uiPreferences?.sections?.nextMove !== false && (bestNextMove.kpiId ? (
         <button
           type="button"
           className="focus-strip focus-strip-actionable"
@@ -351,7 +363,7 @@ export function PatientToday({ patientId, patientData, scores, kpis, metrics, ai
             <p>{bestNextMove.text}</p>
           </div>
         </section>
-      )}
+      ))}
 
       <div className="mobile-section-title">
         <div>
@@ -390,7 +402,7 @@ export function PatientToday({ patientId, patientData, scores, kpis, metrics, ai
         })}
       </div>
 
-      {aiEnabled && (
+      {aiEnabled && uiPreferences?.sections?.aiQuestions !== false && (
         <AiInsightBox
           title="Ask your AI"
           aiEnabled={aiEnabled}
@@ -399,7 +411,7 @@ export function PatientToday({ patientId, patientData, scores, kpis, metrics, ai
             { label: 'What should I focus on?', question: "Looking at my recent data, what's the single most useful thing to focus on right now?" },
             { label: "How's my week going?", question: 'How are my main health habits trending this week?' },
             { label: 'Improve my sleep', question: 'What could I try to improve my sleep?' },
-            { label: 'Am I active enough?', question: 'Am I getting enough activity, and how could I add a bit more?' },
+            { label: 'Choose an activity step', question: 'Which small activity step best fits my recent routine today?' },
           ]}
           onAsk={(question) => onGenerateAiInsight({
             insightType: 'daily',

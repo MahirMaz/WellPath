@@ -1,132 +1,104 @@
-# WellPath Health Healthcare UI
+# WellPath Health
 
 ## Project Overview
 
-This is a complete working React + Vite healthcare lifestyle analytics project for CST3116 Project I. The app is named WellPath Health. It is an Integrated Health & Lifestyle Data Platform that combines simulated clinical, wearable, and lifestyle data into one patient profile. It includes a lightweight Node backend, a JSON data file, saved records, a working intake form, KPI logic, generated review signals, and role-based workflows for patients, trainers, and clinicians. It focuses on trend monitoring, habit summaries, patient goals, history, and lifestyle recommendations. It does not diagnose medical conditions or replace clinical advice.
+WellPath is a role-based lifestyle analytics application built with React, Vite, Express, and MySQL. It helps people understand patterns in activity, sleep, recovery, nutrition, and exercise. It provides lifestyle support and trend monitoring only; it does not diagnose conditions, prescribe treatment, or replace professional medical care.
 
-The app includes three role-based experiences:
+The product has four separate workspaces:
 
-- Patient mobile view for daily steps, sleep, heart rate, exercise progress, history, recommendations, and goals.
-- Trainer or gym partner support view for activity consistency, workout progress, workout focus, recovery, weekly exercise, and encouragement notes.
-- Clinician web/tablet trend review dashboard for patient overview cards, trends, review signals, recommendations, long-term progress, and a patient list.
-- Role-based login keeps patient, trainer, and clinician experiences separate instead of exposing every role tab to every user.
+- Patient: a phone-first daily health app with customizable read-only metric cards, breakdowns, mood and food logs, goals, lifestyle signals, optional AI explanations, light/dark mode, and reduced-motion support.
+- Trainer: a phone-style support app for assigned patients, workout planning, recovery context, completed-session logging, patient feedback, and encouragement notes.
+- Clinician: a web/tablet trend-review dashboard with patient profiles, historical comparisons, non-diagnostic signals, secure notes, follow-up plans, reports, and audit activity.
+- Admin: a desktop operations dashboard for accounts, role boundaries, consent metadata, connection status, and audit events. It intentionally excludes individual readings, private notes, mood entries, and AI conversations.
 
-The data model is represented in the app with simulated records for `users`, `patient_profile`, `clinical_metrics`, `wearable_metrics`, `lifestyle_metrics`, `patient_kpi`, `clinician_kpi`, `trainer_kpi`, and `alerts`.
+## Run The Integrated App
 
-## How To Run The Project
+Requirements: Node.js, npm, and MySQL.
 
-1. Install dependencies:
+1. Import `wellpath_health_dump.sql` into a MySQL database named `wellpath_health`.
+2. In `backend`, install dependencies, copy `.env.example` to `.env`, and enter your local MySQL credentials and JWT secret.
+3. Seed the sample accounts, then apply `backend/migrations/002_patient_customization_admin.sql`.
+4. Start the API.
 
    ```bash
+   cd backend
    npm install
-   ```
-
-2. Build the frontend:
-
-   ```bash
-   npm run build
-   ```
-
-3. Start the complete app with the Node backend:
-
-   ```bash
-   npm start
-   ```
-
-4. Open:
-
-   ```text
-   http://127.0.0.1:5173/
-   ```
-
-For frontend-only development, you can also run:
-
-   ```bash
+   npm run seed
    npm run dev
    ```
 
-The complete app saves data in `data/app-data.json`. The Vite-only development server falls back to browser storage.
-
-## How To Use It Like A Phone App
-
-This project is also a Progressive Web App, so it can be installed on a phone home screen.
-
-### Same Wi-Fi Phone Test
-
-1. On the computer running the project, start the complete app:
+5. In another terminal, start the frontend.
 
    ```bash
-   npm run build
-   npm start
+   npm install
+   npm run dev
    ```
 
-2. Find the computer's local IP address:
+6. Open the Local URL printed by Vite, normally `http://127.0.0.1:5173/`.
 
-   ```bash
-   ipconfig
-   ```
+The API uses port `3000` by default. Set `WELLPATH_API_PORT` before starting Vite if the API runs on another port.
 
-3. On your phone, open:
+## Demo Accounts
 
-   ```text
-   http://YOUR-COMPUTER-IP:5173/
-   ```
+All seeded accounts use `password123`.
 
-4. Install it:
-
-   - Android Chrome: tap the browser menu, then **Install app** or **Add to Home screen**.
-   - iPhone Safari: tap Share, then **Add to Home Screen**.
-
-After installation, the app opens from the phone home screen with its own icon and app-like layout.
+- Patient: `alex@example.com`
+- Trainer: `jordan@example.com`
+- Clinician: `rivera@example.com`
+- Admin: `admin@wellpath.example`
 
 ## Features
 
-- Sign-in flow with saved session state.
-- Role picker on login for Patient, Trainer, or Clinician demo access.
-- Separate signed-in navigation for each role, with a Switch Role action instead of cross-role tabs.
-- Light and dark mode toggle saved across sessions.
-- Installable phone app experience using PWA manifest and service worker.
-- Node backend API at `/api/state`.
-- JSON data storage in `data/app-data.json`.
-- Patient intake form that validates required fields and creates a new simulated patient record.
-- Intake fields map to personal info, clinical metrics, wearable data, lifestyle inputs, consent, KPI tables, and generated review signals.
-- Rule-based KPI engine for health score, trend flag score, activity consistency, recovery score, and engagement level.
-- Patient dashboard with steps, sleep, heart rate, exercise progress, weekly trend chart, and compact next-step cards.
-- Apple Health-inspired summary page with read-only synced metrics, readiness score, ring visual, weekly averages, and connected data sources.
-- Trends page with charts that update when new health data is saved.
-- Plan page that combines lifestyle recommendations and editable goals in one simpler patient section.
-- History page with lifestyle signals and review actions instead of a separate Alerts tab.
-- Trainer support view with consistency, workout progress, workout focus, recovery, exercise trend, and saved encouragement notes.
-- Clinician trend review dashboard with patient metrics, review signals, recommendation summary, long-term chart, searchable patient list, patient profile, recent signals, goals, and exportable report.
-- Editable patient goals with add, complete, and delete actions inside the Plan section.
-- Patient health metrics are read-only to represent synced device data instead of manual editing.
-- Server-backed persistence for health logs, goals, recommendations, alert reviews, trainer notes, active role, and active patient screen.
-- Responsive layout for mobile, tablet, and desktop.
-- Clear disclaimer that the app gives lifestyle trend support, not medical diagnosis.
+- Authenticated, separated role experiences with server-side permission checks.
+- Patient card visibility, order, spacing, start-screen, section, animation, theme, and AI preferences.
+- Historical trend comparisons without forecasting or diagnostic language.
+- Optional AI explanations with a real opt-out enforced by the API.
+- Dated nutrition history and food-to-lifestyle association checks that require matched data and explicitly avoid claiming causation.
+- Trainer plans, session records, feedback history, recovery-aware coaching prompts, and saved encouragement notes.
+- Clinician signals, assignment/status actions, secure notes, care plans, report export, and audit history.
+- Privacy-limited admin account, access, connection, and audit dashboards.
+- Responsive light and dark interfaces for phone, tablet, and desktop.
+- Apple Health and Health Connect bridge points for installed iOS/Android builds.
+
+## Desktop Web Wrapper
+
+`../../wellpath-health-web` contains the synchronized Vinext desktop wrapper. It can connect to the same API or use its browser fallback data for a standalone UI presentation.
+
+```bash
+cd ../../wellpath-health-web
+npm install
+npm run dev
+```
 
 ## Next Goals
 
-- Replace the JSON data file with a production database.
-- Connect the intake form to Yeven's full ERD/schema implementation.
-- Add secure user accounts and permissions.
-- Connect wearable or simulated device data.
-- Add stronger trend analysis and chart filtering.
-- Improve rule-based recommendations with clearer explainability.
-- Add provider notes and care-team collaboration.
-- Add formal testing for more browsers and devices.
+- Complete native HealthKit and Health Connect permission and sync testing on physical phones.
+- Replace simulated readings with approved device or institutional test data.
+- Add stronger explainable trend analysis while keeping non-diagnostic wording.
+- Add notification delivery and user-controlled reminder schedules.
+- Add organization-level admin policies, pagination, and production monitoring.
+- Expand automated API authorization, browser, and accessibility coverage in CI.
 
-## What To Mention During The Professor Demo
+## Professor Demo Notes
 
-- The project is a complete working local product built with React, Vite, and a Node backend.
-- It saves user actions in `data/app-data.json`, so records persist outside the browser session.
-- The patient intake form is the data entry point: it maps personal, clinical, wearable, lifestyle, and consent fields into simulated database tables.
-- Submitting the intake form calculates KPIs and generates lifestyle review signals immediately.
-- Each role is separated at login, so patients do not access the clinician dashboard and trainers do not access the patient app.
-- Light/dark mode and simplified mobile navigation make the patient app easier to use.
-- The main daily experience is designed for the patient on a phone.
-- The trainer view is a smaller support view for motivation and consistency.
-- The clinician trend review dashboard is optimized for web/tablet analytics.
-- The charts show trends in lifestyle habits such as steps, sleep, heart rate, and exercise.
-- Goals, recommendations, history review, trainer notes, workout focus, patient search, report export, and patient profile selection are interactive.
-- Patient metrics are presented as synced read-only data to feel closer to a real health app.
-- The app intentionally avoids medical diagnosis and only provides trend monitoring and lifestyle recommendations.
+- Show that each account opens only its own role workspace.
+- Customize the patient Today screen, refresh it, and show that the preference persists.
+- Turn AI Insights off and show that prompts disappear and the backend rejects AI requests.
+- Open Nutrition and explain that matched-day associations are not claims of causation.
+- Use the trainer phone view to review recovery, adjust a plan, log a session, and save encouragement.
+- Use the clinician tablet view to change trend ranges, review a signal, save a secure note, and export a summary.
+- Use the admin dashboard to explain operational visibility and the deliberate privacy boundary.
+- Emphasize that WellPath supports lifestyle understanding and conversations, not medical diagnosis.
+
+## Verification
+
+```bash
+npm run build
+```
+
+The desktop wrapper additionally supports:
+
+```bash
+npm test
+npm audit --omit=dev
+```

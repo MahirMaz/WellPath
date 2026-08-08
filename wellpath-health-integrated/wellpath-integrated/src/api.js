@@ -136,6 +136,14 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ food }),
     }),
+  getNutritionLogs: (patientId, days = 45) => request(`/patient/${patientId}/nutrition-logs?days=${days}`),
+  addNutritionLog: (patientId, entry) =>
+    request(`/patient/${patientId}/nutrition-logs`, {
+      method: 'POST',
+      body: JSON.stringify(entry),
+    }),
+  deleteNutritionLog: (patientId, logId) =>
+    request(`/patient/${patientId}/nutrition-logs/${logId}`, { method: 'DELETE' }),
   addGoal: (patientId, title, status) => 
     request(`/patient/${patientId}/goals`, {
       method: 'POST',
@@ -223,6 +231,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ patientId }),
     }),
+
+  // Admin (aggregate operations only; no patient readings or private notes)
+  getAdminOverview: () => request('/admin/overview'),
+  getAdminUsers: () => request('/admin/users'),
+  updateAdminUserStatus: (userId, status) =>
+    request(`/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  getAdminAudit: (limit = 80) => request(`/admin/audit?limit=${limit}`),
+  getAdminConnections: () => request('/admin/connections'),
 };
 
 export default api;

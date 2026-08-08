@@ -1,79 +1,136 @@
-import React, { useState, useMemo } from 'react';
-import { Sparkles, Plus, X, Info, Loader2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, Info, Loader2, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
+import { api } from '../../api';
+import { buildDailyNutritionTotals, buildFoodHealthAssociations } from '../../utils/foodPatterns.js';
 
-// Evidence-based daily reference points (US Dietary Guidelines / FDA) — the
-// nutrients that matter most for cardiometabolic risk.
 const REF = {
-  kcal:   { limit: 2000, unit: 'kcal', kind: 'info' },
-  sodium: { limit: 2300, unit: 'mg',  kind: 'limit' },
-  satfat: { limit: 22,   unit: 'g',   kind: 'limit' },
-  sugar:  { limit: 50,   unit: 'g',   kind: 'limit' },
-  fibre:  { limit: 28,   unit: 'g',   kind: 'goal' },
+  kcal: { limit: 2000, unit: 'kcal', kind: 'info' },
+  sodium: { limit: 2300, unit: 'mg', kind: 'limit' },
+  satfat: { limit: 22, unit: 'g', kind: 'limit' },
+  sugar: { limit: 50, unit: 'g', kind: 'limit' },
+  fibre: { limit: 28, unit: 'g', kind: 'goal' },
 };
 const NAMES = { kcal: 'Calories', sodium: 'Sodium', satfat: 'Saturated fat', sugar: 'Sugar', fibre: 'Fibre' };
-const BLANK_MANUAL = { name: '', kcal: '', sodium: '', satfat: '', sugar: '', fibre: '' };
+const NUTRIENT_KEYS = ['kcal', 'protein', 'carbs', 'sugar', 'fibre', 'fat', 'satfat', 'sodium'];
+const BLANK_MANUAL = Object.fromEntries(['name', ...NUTRIENT_KEYS].map((key) => [key, '']));
+const todayKey = () => new Date().toISOString().slice(0, 10);
+const storageKey = (patientId) => `wellpath:nutrition-log:v2:${patientId || 'patient'}`;
 
-export function NutritionLogger() {
+function loadLocalEntries(patientId) {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(storageKey(patientId)) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalEntries(patientId, entries) {
+  try {
+    window.localStorage.setItem(storageKey(patientId), JSON.stringify(entries));
+  } catch {
+    // The log still works for this session if storage is unavailable.
+  }
+}
+
+export function NutritionLogger({ patientId, healthLog = [] }) {
   const [mode, setMode] = useState('ai');
+  const [recordDate, setRecordDate] = useState(todayKey);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [manual, setManual] = useState(BLANK_MANUAL);
-  const [logged, setLogged] = useState([]);
+  const [logged, setLogged] = useState(() => loadLocalEntries(patientId));
 
-  const add = (item) => setLogged((l) => [...l, item]);
-  const remove = (i) => setLogged((l) => l.filter((_, idx) => idx !== i));
+  useEffect(() => {
+    let cancelled = false;
+    api.getNutritionLogs(patientId, 45)
+      .then((entries) => {
+        if (!cancelled && Array.isArray(entries)) setLogged(entries);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [patientId]);
+
+  useEffect(() => {
+    saveLocalEntries(patientId, logged);
+  }, [logged, patientId]);
+
+  const add = async (item) => {
+    const optimistic = {
+      ...item,
+      id: item.id || `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      recordDate,
+    };
+    setLogged((entries) => [...entries, optimistic]);
+    try {
+      const saved = await api.addNutritionLog(patientId, optimistic);
+      setLogged((entries) => entries.map((entry) => entry.id === optimistic.id ? saved : entry));
+    } catch {
+      setError('Saved on this device. It will need the API connection to sync with another device.');
+    }
+  };
+
+  const remove = async (entry) => {
+    setLogged((entries) => entries.filter((item) => item.id !== entry.id));
+    if (!String(entry.id).startsWith('local-')) {
+      api.deleteNutritionLog(patientId, entry.id).catch(() => setError('Removed on this device, but server sync is unavailable.'));
+    }
+  };
 
   const estimate = async () => {
     const food = query.trim();
     if (!food || loading) return;
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
     try {
-      const res = await fetch('/api/ai/nutrition-estimate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken')}` },
-        body: JSON.stringify({ food }),
+      const data = await api.estimateNutrition(food);
+      await add({
+        name: data.name || food,
+        ...Object.fromEntries(NUTRIENT_KEYS.map((key) => [key, Number(data[key]) || 0])),
+        source: 'ai_estimate',
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Could not estimate that food.'); return; }
-      add({ name: data.name || food, kcal: data.kcal, protein: data.protein, carbs: data.carbs, sugar: data.sugar, fibre: data.fibre, fat: data.fat, satfat: data.satfat, sodium: data.sodium, ai: true });
       setQuery('');
     } catch {
-      setError('Could not reach the estimator. Check your connection or enter values manually.');
+      setError('The estimator is unavailable. You can still enter the label values manually.');
     } finally {
       setLoading(false);
     }
   };
 
-  const addManual = () => {
-    const n = (k) => Number(manual[k]) || 0;
-    if (!manual.name.trim() && !n('kcal') && !n('sodium')) return;
-    add({ name: manual.name.trim() || 'Manual entry', kcal: n('kcal'), protein: 0, carbs: 0, sugar: n('sugar'), fibre: n('fibre'), fat: 0, satfat: n('satfat'), sodium: n('sodium'), ai: false });
+  const addManual = async () => {
+    const numeric = Object.fromEntries(NUTRIENT_KEYS.map((key) => [key, Number(manual[key]) || 0]));
+    if (!manual.name.trim() && !numeric.kcal && !numeric.sodium) return;
+    await add({ name: manual.name.trim() || 'Manual entry', ...numeric, source: 'manual' });
     setManual(BLANK_MANUAL);
   };
 
-  const totals = useMemo(() => {
-    const t = { kcal: 0, protein: 0, carbs: 0, sugar: 0, fibre: 0, fat: 0, satfat: 0, sodium: 0 };
-    for (const f of logged) for (const k of Object.keys(t)) t[k] += Number(f[k]) || 0;
-    return t;
-  }, [logged]);
+  const dailyTotals = useMemo(() => buildDailyNutritionTotals(logged), [logged]);
+  const selectedTotals = dailyTotals.find((day) => day.date === recordDate)
+    || { kcal: 0, protein: 0, carbs: 0, sugar: 0, fibre: 0, fat: 0, satfat: 0, sodium: 0, meals: 0 };
+  const selectedEntries = logged.filter((entry) => (entry.recordDate || entry.record_date || '').slice(0, 10) === recordDate);
+  const patterns = useMemo(() => buildFoodHealthAssociations(logged, healthLog), [logged, healthLog]);
 
-  const stat = (nk) => {
-    const ref = REF[nk]; const v = totals[nk];
-    if (ref.kind === 'goal') return v >= ref.limit ? 'ok' : 'under';
-    if (ref.kind === 'limit') return v > ref.limit ? 'over' : 'ok';
+  const stat = (key) => {
+    const ref = REF[key];
+    const value = selectedTotals[key];
+    if (ref.kind === 'goal') return value >= ref.limit ? 'ok' : 'under';
+    if (ref.kind === 'limit') return value > ref.limit ? 'over' : 'ok';
     return 'info';
   };
 
-  const mnum = (k, label, unit) => (
+  const numberField = (key, label, unit) => (
     <label className="nl-mfield"><span>{label} <em>({unit})</em></span>
-      <input type="number" min="0" value={manual[k]} onChange={(e) => setManual((m) => ({ ...m, [k]: e.target.value }))} /></label>
+      <input type="number" min="0" value={manual[key]} onChange={(event) => setManual((current) => ({ ...current, [key]: event.target.value }))} />
+    </label>
   );
 
   return (
     <section className="nt-logger">
-      <h3>Food logger</h3>
-      <p className="nt-note-plain">Estimate any food with AI, or enter the key nutrients yourself. Totals are checked against dietary guidelines.</p>
+      <div className="nl-title-row">
+        <div><h3>Food log</h3><p className="nt-note-plain">Keep a dated meal history and compare it with your own lifestyle patterns.</p></div>
+        <label className="nl-date"><CalendarDays size={15} /><input aria-label="Food log date" type="date" value={recordDate} max={todayKey()} onChange={(event) => setRecordDate(event.target.value)} /></label>
+      </div>
 
       <div className="nl-modes">
         <button type="button" className={mode === 'ai' ? 'on' : ''} onClick={() => setMode('ai')}><Sparkles size={13} /> AI estimate</button>
@@ -83,61 +140,70 @@ export function NutritionLogger() {
       {mode === 'ai' ? (
         <div className="nl-ai">
           <div className="nl-ai-row">
-            <input value={query} onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && estimate()}
-              placeholder="e.g. 2 slices of pepperoni pizza and a coke" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && estimate()} placeholder="e.g. turkey sandwich and an apple" />
             <button type="button" className="nl-est" onClick={estimate} disabled={loading || !query.trim()}>
               {loading ? <Loader2 size={15} className="nl-spin" /> : <Sparkles size={15} />} Estimate
             </button>
           </div>
-          {error && <p className="nl-error">{error}</p>}
-          <p className="nl-tiny">AI estimates are approximate — switch to Manual for exact label values.</p>
+          <p className="nl-tiny">AI estimates are approximate. Use Manual for nutrition-label values.</p>
         </div>
       ) : (
         <div className="nl-manual">
-          <label className="nl-mfield nl-mfield-wide"><span>Food name</span>
-            <input type="text" value={manual.name} onChange={(e) => setManual((m) => ({ ...m, name: e.target.value }))} placeholder="e.g. Homemade curry" /></label>
+          <label className="nl-mfield nl-mfield-wide"><span>Food name</span><input type="text" value={manual.name} onChange={(event) => setManual((current) => ({ ...current, name: event.target.value }))} placeholder="e.g. Homemade curry" /></label>
           <div className="nl-mgrid">
-            {mnum('kcal', 'Calories', 'kcal')}
-            {mnum('sodium', 'Sodium', 'mg')}
-            {mnum('satfat', 'Saturated fat', 'g')}
-            {mnum('sugar', 'Sugar', 'g')}
-            {mnum('fibre', 'Fibre', 'g')}
+            {numberField('kcal', 'Calories', 'kcal')}
+            {numberField('protein', 'Protein', 'g')}
+            {numberField('carbs', 'Carbs', 'g')}
+            {numberField('sodium', 'Sodium', 'mg')}
+            {numberField('satfat', 'Saturated fat', 'g')}
+            {numberField('sugar', 'Sugar', 'g')}
+            {numberField('fibre', 'Fibre', 'g')}
           </div>
           <button type="button" className="nl-est" onClick={addManual}><Plus size={15} /> Add to log</button>
         </div>
       )}
 
-      {logged.length > 0 ? (
+      {error && <p className="nl-error" role="status">{error}</p>}
+
+      {selectedEntries.length ? (
         <ul className="nl-logged">
-          {logged.map((f, i) => (
-            <li key={i}>
-              <span>{f.ai && <Sparkles size={11} className="nl-ai-tag" />}{f.name} <em>{Math.round(f.kcal)} kcal</em></span>
-              <button type="button" onClick={() => remove(i)} aria-label="Remove"><X size={13} /></button>
+          {selectedEntries.map((entry) => (
+            <li key={entry.id}>
+              <span>{entry.source === 'ai_estimate' && <Sparkles size={11} className="nl-ai-tag" />}{entry.name} <em>{Math.round(entry.kcal)} kcal</em></span>
+              <button type="button" onClick={() => remove(entry)} aria-label={`Remove ${entry.name}`}><X size={13} /></button>
             </li>
           ))}
         </ul>
-      ) : <p className="nl-hint">Nothing logged yet.</p>}
+      ) : <p className="nl-hint">Nothing logged for this date.</p>}
 
-      {logged.length > 0 && (
-        <>
-          <div className="nl-totals">
-            {['kcal', 'sodium', 'satfat', 'sugar', 'fibre'].map((nk) => (
-              <div key={nk} className={`nl-tot ${stat(nk)}`}>
-                <span className="nl-tot-val">{Math.round(totals[nk])}<small>{REF[nk].unit}</small></span>
-                <span className="nl-tot-lab">{NAMES[nk]}</span>
-                <span className="nl-tot-ref">
-                  {REF[nk].kind === 'goal' ? (stat(nk) === 'ok' ? 'goal met' : `goal ${REF[nk].limit}`)
-                    : REF[nk].kind === 'limit' ? (stat(nk) === 'over' ? `over ${REF[nk].limit}` : `within ${REF[nk].limit}`)
-                    : `of ~${REF[nk].limit}`}
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="nl-macros">Also today: protein {Math.round(totals.protein)} g · carbs {Math.round(totals.carbs)} g · total fat {Math.round(totals.fat)} g</p>
-          <p className="nl-disclaimer"><Info size={13} /> General nutrition guidance vs dietary guidelines — not a diagnosis or medical advice.</p>
-        </>
-      )}
+      {selectedEntries.length > 0 && <>
+        <div className="nl-totals">
+          {Object.keys(REF).map((key) => (
+            <div key={key} className={`nl-tot ${stat(key)}`}>
+              <span className="nl-tot-val">{Math.round(selectedTotals[key])}<small>{REF[key].unit}</small></span>
+              <span className="nl-tot-lab">{NAMES[key]}</span>
+              <span className="nl-tot-ref">{REF[key].kind === 'goal' ? `goal ${REF[key].limit}` : REF[key].kind === 'limit' ? `guide ${REF[key].limit}` : `reference ~${REF[key].limit}`}</span>
+            </div>
+          ))}
+        </div>
+        <p className="nl-macros">Protein {Math.round(selectedTotals.protein)} g | Carbs {Math.round(selectedTotals.carbs)} g | Total fat {Math.round(selectedTotals.fat)} g</p>
+      </>}
+
+      <section className="nutrition-patterns" aria-label="Food and health patterns">
+        <div className="nutrition-pattern-heading"><TrendingUp size={17} /><div><strong>Food and lifestyle patterns</strong><span>{patterns.pairedDays} matched days</span></div></div>
+        {patterns.associations.length ? patterns.associations.map((item) => (
+          <article className={`nutrition-pattern-card tone-${item.tone}`} key={item.id}>
+            <strong>{item.title}</strong>
+            <p>On {item.nutrientLabel} days at or above {item.threshold}{item.nutrientUnit}, your {item.metricLabel} was typically {item.direction} than on other logged days.</p>
+            <small>Compared across {item.higherDays + item.lowerDays} days in your log.</small>
+          </article>
+        )) : <p className="nl-hint">
+          {patterns.pairedDays < 7
+            ? 'Log meals on at least seven days that also have health data to reveal careful pattern comparisons.'
+            : 'There is enough matched data, but no consistent food and lifestyle association stands out yet.'}
+        </p>}
+        <p className="nl-disclaimer"><Info size={13} /> These are personal associations, not proof that a food caused a health change. Lifestyle support only, not medical advice.</p>
+      </section>
     </section>
   );
 }

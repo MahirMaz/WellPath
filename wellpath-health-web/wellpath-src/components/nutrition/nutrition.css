@@ -15,11 +15,12 @@
 .nt-note-plain { margin: 0 0 12px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 
 .nt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.nt-link { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--wellpath-accent); background: transparent; color: var(--wellpath-accent); border-radius: 10px; padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.nt-link { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--wellpath-accent); background: transparent; color: #0d686c; border-radius: 10px; padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+[data-theme="dark"] .nt-link { color: #79e4e1; }
 .nt-link:hover { background: var(--wellpath-accent-soft); }
 .nt-field { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; }
 .nt-field > span { color: var(--muted); }
-.nt-field em { font-style: normal; font-size: 11px; color: var(--muted); opacity: 0.8; }
+.nt-field em { font-style: normal; font-size: 11px; color: #536776; }
 .nt-field input { border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); border-radius: 10px; padding: 11px 12px; font-size: 18px; font-weight: 700; outline: none; width: 100%; }
 .nt-field input:focus { border-color: var(--wellpath-accent); }
 
@@ -93,11 +94,16 @@
 .nl-tot-lab { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
 .nl-tot-ref { display: block; font-size: 9.5px; margin-top: 3px; font-weight: 700; }
 .nl-tot.over { border-color: color-mix(in srgb, var(--coral) 50%, var(--line)); }
-.nl-tot.over .nl-tot-ref { color: var(--coral); }
-.nl-tot.ok .nl-tot-ref { color: var(--green); }
+.nl-tot.over .nl-tot-ref { color: #a82730; }
+.nl-tot.ok .nl-tot-ref { color: #0b6b4e; }
 .nl-tot.under { border-color: color-mix(in srgb, var(--amber) 50%, var(--line)); }
-.nl-tot.under .nl-tot-ref { color: var(--amber); }
-.nl-tot.info .nl-tot-ref { color: var(--muted); }
+.nl-tot.under .nl-tot-ref { color: #86500a; }
+.nl-tot.info .nl-tot-ref { color: #536776; }
+[data-theme="dark"] .nt-field em,
+[data-theme="dark"] .nl-tot.info .nl-tot-ref { color: #afc0cc; }
+[data-theme="dark"] .nl-tot.over .nl-tot-ref { color: #ff878d; }
+[data-theme="dark"] .nl-tot.ok .nl-tot-ref { color: #65d6aa; }
+[data-theme="dark"] .nl-tot.under .nl-tot-ref { color: #ffc46f; }
 .nl-macros { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
 
 .nl-links { margin-top: 12px; padding: 12px; border-radius: 11px; background: var(--wellpath-accent-soft); border: 1px solid color-mix(in srgb, var(--wellpath-accent) 30%, var(--line)); }

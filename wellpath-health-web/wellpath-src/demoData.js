@@ -103,6 +103,7 @@ export const demoAccounts = [
   })),
   { id: 6, name: 'Jordan Lee', email: 'jordan@example.com', role: 'trainer', patientId: null },
   { id: 7, name: 'Dr. Rivera', email: 'rivera@example.com', role: 'clinician', patientId: null },
+  { id: 9, name: 'Morgan Chen', email: 'admin@wellpath.example', role: 'dba', patientId: null },
 ];
 
 export function getDemoProfile(patientId) {
