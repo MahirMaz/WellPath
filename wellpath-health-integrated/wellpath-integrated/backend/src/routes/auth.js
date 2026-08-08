@@ -1,10 +1,9 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { pool } from '../config/db.js';
+import { authenticate, generateToken } from '../middleware/auth.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -45,11 +44,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     
-    const token = jwt.sign(
-      { userId: user.user_id, role: user.role_name },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = generateToken(user.user_id, user.role_name);
     
     let patientId = null;
     if (user.role_name === 'patient') {
@@ -75,6 +70,47 @@ router.post('/login', async (req, res) => {
     
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/auth/me
+router.get('/me', authenticate, async (req, res) => {
+  try {
+    const [users] = await pool.query(`
+      SELECT u.user_id, r.role_name, p.full_name, p.email
+      FROM users u
+      JOIN roles r ON r.role_id = u.role_id
+      JOIN user_pii p ON p.user_id = u.user_id
+      WHERE u.user_id = ? AND u.account_status = 'active'
+      LIMIT 1
+    `, [req.user.userId]);
+
+    if (!users.length) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    const account = users[0];
+    let patientId = null;
+    if (account.role_name === 'patient') {
+      const [patients] = await pool.query(
+        'SELECT patient_id FROM patient_profiles WHERE user_id = ? LIMIT 1',
+        [account.user_id]
+      );
+      patientId = patients[0]?.patient_id || null;
+    }
+
+    res.json({
+      user: {
+        id: account.user_id,
+        name: account.full_name,
+        role: account.role_name,
+        patientId,
+        email: account.email,
+      },
+    });
+  } catch (error) {
+    console.error('Session lookup error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

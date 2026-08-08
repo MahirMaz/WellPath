@@ -1,0 +1,657 @@
+/* Trainer workspace */
+.trainer-workspace {
+  position: relative;
+  width: min(100%, 520px);
+  min-height: calc(100vh - 36px);
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+.trainer-workspace.single-state {
+  display: grid;
+  place-items: center;
+}
+
+.trainer-workspace-header,
+.trainer-brand,
+.trainer-account,
+.trainer-title-row,
+.trainer-title-meta,
+.trainer-panel-heading,
+.settings-heading-row,
+.connection-row,
+.connection-actions {
+  display: flex;
+  align-items: center;
+}
+
+.trainer-workspace-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.trainer-brand {
+  gap: 11px;
+}
+
+.trainer-brand > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--wellpath-navy);
+  color: #69e0d7;
+}
+
+.trainer-brand strong,
+.trainer-brand small {
+  display: block;
+}
+
+.trainer-brand strong {
+  font-size: 17px;
+}
+
+.trainer-brand small,
+.trainer-account > span,
+.trainer-title-row p,
+.trainer-title-meta,
+.trainer-panel > p,
+.trainer-panel blockquote,
+.trainer-panel small {
+  color: var(--muted);
+}
+
+.trainer-account {
+  gap: 8px;
+}
+
+.trainer-account > span {
+  display: none;
+}
+
+.trainer-account button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.trainer-patient-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+  scrollbar-width: none;
+}
+
+.trainer-patient-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.trainer-patient-strip button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 0 0 178px;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 9px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.trainer-patient-strip button.active {
+  border-color: var(--teal);
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(25, 87, 243, 0.08);
+}
+
+.trainer-patient-strip button > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e7f6f5;
+  color: var(--teal-dark);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.trainer-patient-strip button div {
+  min-width: 0;
+}
+
+.trainer-patient-strip strong,
+.trainer-patient-strip small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trainer-patient-strip strong {
+  font-size: 12px;
+}
+
+.trainer-patient-strip small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.trainer-title-row {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 16px 10px;
+}
+
+.trainer-title-row h1 {
+  margin: 3px 0;
+  font-size: 23px;
+}
+
+.trainer-title-row p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.trainer-title-meta {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.trainer-title-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: var(--surface);
+  font-size: 11px;
+}
+
+.trainer-section-tabs {
+  position: fixed;
+  right: auto;
+  bottom: 0;
+  left: 50%;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(100%, 520px);
+  margin: 0;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 -8px 24px rgba(10, 35, 48, 0.12);
+  backdrop-filter: blur(14px);
+  transform: translateX(-50%);
+}
+
+.trainer-section-tabs button {
+  display: flex;
+  min-width: 0;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 3px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.trainer-section-tabs button.active {
+  background: color-mix(in srgb, var(--teal) 13%, var(--surface));
+  color: var(--teal-dark);
+}
+
+.trainer-global-status {
+  margin: 12px 16px 0;
+  border: 1px solid #b9e7d2;
+  border-radius: 7px;
+  padding: 9px 12px;
+  background: #effaf6;
+  color: #126545;
+  font-size: 13px;
+}
+
+.trainer-workspace-main {
+  padding: 14px 14px calc(92px + env(safe-area-inset-bottom));
+}
+
+.trainer-quick-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.trainer-quick-actions > div {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding-right: 4px;
+}
+
+.trainer-quick-actions > div strong {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.trainer-quick-actions button {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 60px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.trainer-quick-actions button svg {
+  color: var(--teal-dark);
+}
+
+.trainer-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.trainer-metric-button {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 126px;
+  padding: 13px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(35, 78, 96, 0.04);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.trainer-metric-button:hover {
+  border-color: color-mix(in srgb, var(--teal) 65%, var(--line));
+  transform: translateY(-2px);
+  box-shadow: 0 9px 22px rgba(35, 78, 96, 0.1);
+}
+
+.trainer-metric-button.selected {
+  border-color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 16%, transparent);
+}
+
+.trainer-metric-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--teal) 13%, var(--surface));
+}
+
+.trainer-metric-icon svg {
+  color: var(--teal);
+}
+
+.trainer-metric-button > span:not(.trainer-metric-icon),
+.trainer-metric-button small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trainer-metric-button strong {
+  font-size: 22px;
+}
+
+.trainer-metric-chevron {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  color: var(--muted);
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.trainer-metric-button.selected .trainer-metric-chevron {
+  color: var(--teal-dark);
+  transform: rotate(90deg);
+}
+
+.trainer-metric-detail {
+  display: grid;
+  gap: 12px;
+  margin: -2px 0 14px;
+  border: 1px solid color-mix(in srgb, var(--teal) 48%, var(--line));
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--surface);
+  box-shadow: 0 10px 26px rgba(35, 78, 96, 0.09);
+  transform-origin: top center;
+  animation: trainerDetailOpen 480ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.trainer-metric-detail-heading {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 10px;
+}
+
+.trainer-metric-detail-heading > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--teal) 14%, var(--surface));
+  color: var(--teal-dark);
+}
+
+.trainer-metric-detail-heading small,
+.trainer-metric-detail-heading h2 {
+  display: block;
+  margin: 0;
+}
+
+.trainer-metric-detail-heading small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.trainer-metric-detail-heading h2 {
+  margin-top: 2px;
+  font-size: 17px;
+}
+
+.trainer-metric-detail-heading button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.trainer-metric-context {
+  font-size: 13px;
+}
+
+.trainer-metric-detail > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.trainer-detail-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+  gap: 7px;
+  height: 84px;
+  border-radius: 7px;
+  padding: 9px 9px 4px;
+  background: var(--surface-soft);
+}
+
+.trainer-detail-bars > div {
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.trainer-detail-bars > div > span {
+  width: min(100%, 18px);
+  min-height: 8px;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--teal);
+  animation: trainerBarRise 420ms cubic-bezier(.16, 1, .3, 1) both;
+  transform-origin: bottom;
+}
+
+.trainer-detail-bars small {
+  overflow: hidden;
+  width: 100%;
+  color: var(--muted);
+  font-size: 8px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trainer-coaching-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border-radius: 7px;
+  padding: 10px;
+  background: var(--surface-soft);
+}
+
+.trainer-coaching-prompt svg {
+  flex: 0 0 auto;
+  color: var(--teal-dark);
+}
+
+.trainer-coaching-prompt p,
+.trainer-coaching-prompt strong {
+  display: block;
+  margin: 0;
+}
+
+.trainer-coaching-prompt p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.trainer-coaching-prompt strong {
+  margin-bottom: 2px;
+  color: var(--text);
+  font-size: 10px;
+}
+
+.trainer-detail-action {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0;
+}
+
+.trainer-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.trainer-panel {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgba(35, 78, 96, 0.05);
+}
+
+.trainer-panel-heading {
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 13px;
+}
+
+.trainer-panel-heading h2,
+.trainer-panel-heading h3 {
+  margin: 3px 0 0;
+  font-size: 17px;
+}
+
+.trainer-panel-heading > strong {
+  color: var(--teal-dark);
+  font-size: 22px;
+}
+
+.trainer-readiness-panel {
+  border-top: 4px solid var(--teal);
+}
+
+.trainer-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.trainer-check-grid span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.trainer-check-grid svg {
+  flex: 0 0 auto;
+  color: var(--green);
+}
+
+.trainer-safety-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border: 1px solid #f3d2a7;
+  border-radius: 7px;
+  padding: 10px;
+  background: #fff8ed;
+  color: #69420e;
+}
+
+.trainer-safety-note svg {
+  flex: 0 0 auto;
+}
+
+.trainer-safety-note p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.trainer-exercise-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  height: 125px;
+  margin: 15px 0 8px;
+}
+
+.trainer-chart-selection {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.trainer-chart-selection strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.trainer-exercise-bars button {
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  gap: 5px;
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 2px 2px;
+  background: transparent;
+  color: var(--muted);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.trainer-exercise-bars button:hover,
+.trainer-exercise-bars button.selected {
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+  color: var(--text);
+}
+
+.trainer-exercise-bars button.selected small {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.trainer-exercise-bars button > span {
+  width: min(100%, 24px);
+  min-height: 10px;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--blue);
+  transform-origin: bottom;
+  animation: trainerBarRise 520ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.trainer-exercise-bars small {
+  font-size: 9px;
+}

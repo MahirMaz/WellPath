@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Home, Activity, Dumbbell, Settings, Stethoscope,
-  LogOut, Moon, Sun, Smile, Droplets, Settings as SettingsIcon, MoreHorizontal, BarChart3, Gauge, Utensils
+  LogOut, Moon, Sun, Smile, Droplets, Settings as SettingsIcon, MoreHorizontal, Sparkles, Gauge, Utensils
 } from 'lucide-react';
 import { api } from '../api';
 import { PatientAppHeader } from './patient/PatientAppHeader.jsx';
 import { PatientToday } from './patient/PatientToday.jsx';
 import { HealthSummary } from './patient/HealthSummary.jsx';
-import { TrainerPage } from './patient/TrainerPage.jsx';
+import { PartnerPage } from './patient/PartnerPage.jsx';
 import { getMemory } from './patient/aiMemory.js';
 import { ClinicalDataPage } from './patient/ClinicalDataPage.jsx';
 import { PatientSettingsPage } from './patient/PatientSettingsPage.jsx';
 import { MoodPage } from './patient/MoodPage.jsx';
 import { CyclePage } from './patient/CyclePage.jsx';
-import { DataInsights } from './insights/DataInsights.jsx';
+import { AiInsightsPage } from './patient/AiInsightsPage.jsx';
 import { RiskSignal } from './risksignal/RiskSignal.jsx';
 import { NutritionTab } from './nutrition/NutritionTab.jsx';
 import { HealthProfileProvider } from './shared/profileContext.jsx';
@@ -33,6 +33,10 @@ const weeklyTrend = [
 ];
 
 const defaultSummaryMetrics = ['steps', 'sleep', 'heartRate', 'exercise', 'recovery'];
+const defaultHealthConnections = [
+  { provider: 'apple_health', status: 'not_connected', permissions: [], last_sync: null },
+  { provider: 'health_connect', status: 'not_connected', permissions: [], last_sync: null },
+];
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -160,10 +164,18 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   const [goals, setGoals] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [aiEnabled, setAiEnabled] = useState(true);
+  const aiPreferenceKey = `wellpath:ai-enabled:${user?.id ?? 'patient'}`;
+  const [aiEnabled, setAiEnabled] = useState(() => {
+    try {
+      return window.localStorage.getItem(aiPreferenceKey) !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const [visibleMetrics, setVisibleMetrics] = useState(defaultSummaryMetrics);
   const [aiAnswer, setAiAnswer] = useState(null);
   const [breakdownMetric, setBreakdownMetric] = useState(null);
+  const [healthConnections, setHealthConnections] = useState(defaultHealthConnections);
   const more = useBubbleReveal();
 
   const patientId = user?.patientId;
@@ -179,6 +191,14 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     window.scrollTo(0, 0);
   }, [screen]);
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(aiPreferenceKey, String(aiEnabled));
+    } catch {
+      // The setting still works for this session when storage is unavailable.
+    }
+  }, [aiEnabled, aiPreferenceKey]);
+
   // Open the Breakdown page, optionally focused on a specific KPI's metric.
   const KPI_TO_BREAKDOWN = { calories: 'activeCalories' };
   const openBreakdown = useCallback((kpiId) => {
@@ -189,10 +209,11 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   const fetchPatientData = async () => {
     try {
       setLoading(true);
-      const [dashboard, trends, goalsData] = await Promise.all([
+      const [dashboard, trends, goalsData, connections] = await Promise.all([
         api.getDashboard(patientId),
         api.getTrends(patientId),
         api.getGoals(patientId),
+        api.getHealthConnections(patientId).catch(() => defaultHealthConnections),
       ]);
 
       setDashboardData(dashboard);
@@ -201,6 +222,9 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       }
       if (goalsData && goalsData.length > 0) {
         setGoals(goalsData);
+      }
+      if (Array.isArray(connections)) {
+        setHealthConnections(connections);
       }
     } catch (error) {
       console.error('Failed to fetch patient data:', error);
@@ -286,10 +310,10 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     ...(tracksCycle ? [['cycle', 'Cycle', Droplets]] : []),
   ];
   const moreNav = [
-    ['insights', 'Insights', BarChart3],
+    ['insights', 'AI', Sparkles],
     ['risk', 'Risk Signal', Gauge],
-    ['trainer', 'Trainer', Dumbbell],
-    ['clinical', 'Clinician', Stethoscope],
+    ['trainer', 'Partner', Dumbbell],
+    ['clinical', 'Health record', Stethoscope],
     ['settings', 'Settings', SettingsIcon],
   ];
 
@@ -312,36 +336,18 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     });
 
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('http://localhost:3000/api/ai/insights', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          patientId: patientId,
-          metricId: metric.id,
-          promptId: prompt.id,
-        }),
+      const data = await api.getAiInsight({
+        patientId,
+        metricId: metric.id,
+        promptId: prompt.id,
       });
 
-      const data = await response.json();
-      
-      if (response.ok) {
-        setAiAnswer({
-          metric: metric.label,
-          prompt: prompt.label,
-          text: data.answer || 'No insights available at this time.',
-          disclaimer: data.disclaimer,
-        });
-      } else {
-        setAiAnswer({
-          metric: metric.label,
-          prompt: prompt.label,
-          text: data.error || 'Failed to generate insights. Please try again.',
-        });
-      }
+      setAiAnswer({
+        metric: metric.label,
+        prompt: prompt.label,
+        text: data.answer || 'No insights are available right now.',
+        disclaimer: data.disclaimer,
+      });
     } catch (error) {
       console.error('AI Error:', error);
       setAiAnswer({
@@ -364,33 +370,31 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       ? { ...target, targetContext: { ...(target.targetContext || {}), userMemory: memory } }
       : target;
 
-    const token = localStorage.getItem('authToken');
-    const response = await fetch('http://localhost:3000/api/ai/insights', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        patientId,
-        ...payload,
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to generate insight.');
-    }
+    const data = await api.getAiInsight({ patientId, ...payload });
 
     return data.answer || "I'm having trouble generating this insight right now. Please try again later.";
   }, [aiEnabled, patientId]);
 
+  const updateHealthConnection = async (provider, updates) => {
+    const saved = await api.updateHealthConnection(patientId, provider, updates);
+    setHealthConnections((items) => [
+      ...items.filter((item) => item.provider !== provider),
+      saved,
+    ]);
+    return saved;
+  };
+
   const addGoal = async (title) => {
     try {
       const newGoal = await api.addGoal(patientId, title, 'Planned');
-      setGoals([...goals, { id: newGoal.id, title: newGoal.title, status: 'Planned' }]);
-    } catch (err) {
-      alert('Failed to add goal: ' + err.message);
+      setGoals((items) => [...items, {
+        id: newGoal.id,
+        title: newGoal.title,
+        status: newGoal.status || 'Planned',
+      }]);
+      return newGoal;
+    } catch (error) {
+      throw new Error(error.message || 'The goal could not be added.');
     }
   };
 
@@ -398,13 +402,25 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     try {
       const newStatus = currentStatus === 'Complete' ? 'In progress' : 'Complete';
       await api.updateGoal(goalId, { status: newStatus });
-      setGoals(goals.map(g => 
-        g.id === goalId ? { ...g, status: newStatus } : g
-      ));
-    } catch (err) {
-      alert('Failed to update goal: ' + err.message);
+      setGoals((items) => items.map((goal) => (
+        goal.id === goalId ? { ...goal, status: newStatus } : goal
+      )));
+      return newStatus;
+    } catch (error) {
+      throw new Error(error.message || 'The goal could not be updated.');
     }
   };
+
+  const deleteGoal = async (goalId) => {
+    try {
+      await api.deleteGoal(goalId);
+      setGoals((items) => items.filter((goal) => goal.id !== goalId));
+    } catch (error) {
+      throw new Error(error.message || 'The goal could not be deleted.');
+    }
+  };
+
+  const submitPatientFeedback = (feedback) => api.addPatientFeedback(patientId, feedback);
 
   if (loading) {
     return (
@@ -464,7 +480,15 @@ function PatientView({ user, onLogout, theme, setTheme }) {
           />
         )}
         {screen === 'insights' && (
-          <DataInsights />
+          <AiInsightsPage
+            metrics={metrics}
+            aiEnabled={aiEnabled}
+            setAiEnabled={setAiEnabled}
+            aiAnswer={aiAnswer}
+            onAskAi={askAi}
+            healthLog={healthLog}
+            onGenerateAiInsight={generateDashboardAiInsight}
+          />
         )}
         {screen === 'risk' && (
           <RiskSignal />
@@ -478,14 +502,14 @@ function PatientView({ user, onLogout, theme, setTheme }) {
           />
         )}
         {screen === 'trainer' && (
-          <TrainerPage
-            patientId={patientId}
+          <PartnerPage
             patientData={currentPatient}
             healthLog={healthLog}
             goals={goals}
-            setGoals={setGoals}
             onAddGoal={addGoal}
             onToggleGoal={toggleGoalStatus}
+            onDeleteGoal={deleteGoal}
+            onSubmitFeedback={submitPatientFeedback}
           />
         )}
         {screen === 'clinical' && (
@@ -507,6 +531,8 @@ function PatientView({ user, onLogout, theme, setTheme }) {
             setTheme={setTheme} 
             onLogout={onLogout}
             user={user}
+            healthConnections={healthConnections}
+            onUpdateHealthConnection={updateHealthConnection}
           />
         )}
       </div>
