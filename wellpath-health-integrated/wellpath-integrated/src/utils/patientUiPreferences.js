@@ -17,6 +17,12 @@ export const PATIENT_START_SCREENS = [
   { id: 'nutrition', label: 'Nutrition' },
 ];
 
+export const PATIENT_VIEW_MODES = [
+  { id: 'auto', label: 'Auto' },
+  { id: 'app', label: 'App' },
+  { id: 'desktop', label: 'Desktop' },
+];
+
 export const DEFAULT_PATIENT_UI_PREFERENCES = {
   version: 2,
   visibleMetricIds: ['steps', 'sleep', 'recovery', 'heartRate', 'exercise', 'activeMinutes'],
@@ -29,7 +35,12 @@ export const DEFAULT_PATIENT_UI_PREFERENCES = {
   density: 'comfortable',
   startScreen: 'dashboard',
   reduceMotion: false,
+  // 'auto' = phone layout on narrow screens, wide layout on desktop.
+  // 'app' = always the phone layout. 'desktop' = always the wide layout.
+  viewMode: 'auto',
 };
+
+const validViewModes = new Set(PATIENT_VIEW_MODES.map((item) => item.id));
 
 const validMetricIds = new Set(PATIENT_KPI_OPTIONS.map((item) => item.id));
 const validStartScreens = new Set(PATIENT_START_SCREENS.map((item) => item.id));
@@ -62,6 +73,7 @@ export function normalizePatientUiPreferences(value = {}) {
     density: value.density === 'compact' ? 'compact' : 'comfortable',
     startScreen: validStartScreens.has(value.startScreen) ? value.startScreen : 'dashboard',
     reduceMotion: Boolean(value.reduceMotion),
+    viewMode: validViewModes.has(value.viewMode) ? value.viewMode : 'auto',
   };
 }
 

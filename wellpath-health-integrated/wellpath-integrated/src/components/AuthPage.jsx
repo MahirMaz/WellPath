@@ -75,8 +75,8 @@ function AuthPage({ onLogin, theme, setTheme }) {
 
         <div className="login-mode-row">
           <span>Sign in to your account</span>
-          <button 
-            className="logout-btn" 
+          <button
+            className="logout-btn"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             type="button"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}

@@ -7,7 +7,7 @@ import {
 import {
   getHealthBridgeStatus, openHealthPermissionSettings, requestHealthPermissions, syncHealthData,
 } from '../../integrations/healthBridge.js';
-import { PATIENT_KPI_OPTIONS, PATIENT_START_SCREENS } from '../../utils/patientUiPreferences.js';
+import { PATIENT_KPI_OPTIONS, PATIENT_START_SCREENS, PATIENT_VIEW_MODES } from '../../utils/patientUiPreferences.js';
 
 const connectionLabels = {
   apple_health: 'Apple Health',
@@ -174,6 +174,22 @@ export function PatientSettingsPage({
             <input type="checkbox" checked={uiPreferences.sections[option.id]} onChange={() => toggleSection(option.id)} />
           </label>
         ))}
+        <div className="setting-control-block">
+          <span>View</span>
+          <div className="settings-segmented" role="group" aria-label="View mode">
+            {PATIENT_VIEW_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                className={(uiPreferences.viewMode || 'auto') === mode.id ? 'active' : ''}
+                onClick={() => updatePreferences((current) => ({ ...current, viewMode: mode.id }), `View set to ${mode.label}.`)}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="setting-hint">Auto uses the app layout on phones and the wide layout on desktop. App and Desktop force one regardless of screen.</p>
         <div className="setting-control-block">
           <span>Card spacing</span>
           <div className="settings-segmented" role="group" aria-label="Card spacing">

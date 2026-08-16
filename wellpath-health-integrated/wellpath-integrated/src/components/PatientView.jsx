@@ -180,6 +180,17 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   const [healthConnections, setHealthConnections] = useState(defaultHealthConnections);
   const more = useBubbleReveal();
 
+  // Track viewport width so the 'auto' view mode picks phone vs desktop layout.
+  const [isWideScreen, setIsWideScreen] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth >= 860,
+  );
+  useEffect(() => {
+    const onResize = () => setIsWideScreen(window.innerWidth >= 860);
+    window.addEventListener('resize', onResize);
+    onResize();
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const patientId = user?.patientId;
 
   useEffect(() => {
@@ -472,7 +483,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
 
   return (
     <HealthProfileProvider initial={initialProfile}>
-    <section className={`patient-app-shell density-${uiPreferences.density}${uiPreferences.reduceMotion ? ' reduce-motion' : ''}`}>
+    <section className={`patient-app-shell density-${uiPreferences.density}${uiPreferences.reduceMotion ? ' reduce-motion' : ''}${(uiPreferences.viewMode === 'desktop' || (uiPreferences.viewMode !== 'app' && isWideScreen)) ? ' is-wide' : ''}`}>
       <PatientAppHeader
         patientData={currentPatient}
         aiEnabled={aiEnabled}

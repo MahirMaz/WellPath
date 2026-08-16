@@ -62,3 +62,6 @@ tmp/
 # ---- Local assistant/editor state ----
 .claude/settings.local.json
 *_BACKUP.pptx
+
+# Local non-app extras (unrelated projects, scratch, datasets) — not part of the app
+WellPath Extras/
