@@ -236,7 +236,8 @@ export async function generateTargetedDashboardInsight({
     const isMood = insightType === 'mood';
     const isPrediction = insightType === 'prediction' || insightType === 'trend';
     const isCycle = insightType === 'cycle';
-    const systemPrompt = buildTargetedInsightPrompt({ patientData, latestMetrics, trends, isClinical, isScore, isMood, isPrediction, isCycle });
+    const isNutrition = insightType === 'nutrition';
+    const systemPrompt = buildTargetedInsightPrompt({ patientData, latestMetrics, trends, isClinical, isScore, isMood, isPrediction, isCycle, isNutrition });
     const targetPayload = JSON.stringify({
       insightType,
       targetId,
@@ -432,8 +433,8 @@ IMPORTANT RULES:
 - NEVER give medical advice, treatment instructions, medication, or dosing guidance
 - ALWAYS encourage users to consult healthcare professionals for medical concerns
 - Focus on lifestyle habits: sleep, exercise, nutrition, stress management, and activity
-- Keep responses to one observation and one practical action (about 20-35 words)
-- Use simple, friendly language
+- Keep responses to one observation and one practical action (about 18-26 words)
+- Use simple, friendly language — like a knowledgeable friend, not a doctor. Avoid clinical or authoritative phrasing (e.g. "monitor", "consult", "readings", "abnormal").
 - Be genuinely useful, not generic: tie each recommendation to the specific pattern in THIS person's data, make the action concrete and anchored to a cue or time of day, and add a brief reason it helps. Avoid advice that could apply to anyone.
 
 PATIENT PROFILE:
@@ -469,7 +470,7 @@ function compactRecord(record) {
   );
 }
 
-function buildTargetedInsightPrompt({ patientData, latestMetrics, trends, isClinical, isScore, isMood, isPrediction, isCycle }) {
+function buildTargetedInsightPrompt({ patientData, latestMetrics, trends, isClinical, isScore, isMood, isPrediction, isCycle, isNutrition }) {
   const compactLatest = compactRecord(latestMetrics);
   const compactTrends = Array.isArray(trends) ? trends.map(compactRecord) : [];
 
@@ -480,8 +481,9 @@ USER QUESTIONS (highest priority): If the target context includes a "userQuestio
 
 PERSONAL CONTEXT: The target context may include a "userMemory" array — things this person has previously told the app about themselves (habits, schedule, constraints, physical limitations, dietary preferences, goals). When it is present, tailor your guidance to fit it and avoid suggestions that conflict with it (for example, if they mention knee pain, don't suggest running; if they work night shifts, don't assume a normal bedtime). Weave it in naturally and only when relevant — never list it back to them or say "you told me".
 
-Write 1-2 sentences, roughly 18-32 words. Give one observation and one practical action. Be skimmable and specific, with no opening summary or filler.
+Write 1-2 short sentences, roughly 15-24 words. Give one observation and one practical action. Be skimmable and specific, with no opening summary or filler.
 Speak directly to the user using "you" and "your".
+Sound like a knowledgeable, encouraging friend who happens to understand this data — warm and plain-spoken, NOT a doctor or clinician. Avoid clinical, diagnostic, or authoritative-sounding phrasing (no "monitor", "consult", "readings", "abnormal", "concerning"), and never hedge with things like "without diagnosing anything". Just be helpful and human.
 Make every insight genuinely useful, not generic. First, name the specific pattern in THEIR data that actually matters here (e.g. "your bedtime keeps drifting later", "you sit for long unbroken stretches in the afternoon"). Then give ONE concrete, realistic action they could start today — tied to a cue or time of day — and, when it fits in the word budget, a short reason it helps so it teaches rather than just tells. Avoid advice so generic it could apply to anyone.
 Never restate the score or metric's name or its status word (do not write "WellPath Score", "Moderate", "Good", "Excellent", or "Needs Attention"). Lead with the substance.
 Do NOT restate numbers the card already shows (its current value, goal/target/limit, or 7-day average) — the user can already see those. Instead say what the data means and give the next step. You may cite a less-obvious derived figure (such as a change from baseline or a weekly total) only if it genuinely adds insight.
@@ -525,6 +527,11 @@ For cycle analysis (the target context contains cycle statistics computed from t
 - If their cycles are flagged irregular, gently suggest tracking a few more and mentioning persistent irregularity to a clinician.
 - Never diagnose (no PCOS, endometriosis, pregnancy, or any condition). Never give contraception or fertility advice, and never imply the estimate can be used to prevent or achieve pregnancy.
 
+For nutrition analysis (the target context contains a "mealLog" object built from the patient's own logged meals — daysLogged/mealsLogged, dailyAverages of nutrients, "topFoods" they log most often with counts, "recentDays" per-day totals, and any precomputed food-vs-metric "associations"):
+- READ the actual logged foods and nutrient patterns and ground every point in them. Name a specific food or a real pattern that is in the data (e.g. "your dinners lean high in sodium", "fibre is low most days", "you log fast food often"). NEVER invent a food or number that is not in mealLog.
+- Allow 2-3 sentences (up to ~45 words). Give ONE clear conclusion about their eating pattern, then ONE realistic, specific change that builds on what they already eat.
+- Lifestyle-only: no diagnosis, no calorie/macro prescriptions, no medical claims, no judgment. If very little is logged (daysLogged low), say what to log next for a more useful read instead of guessing.
+
 For an overall score (WellPath, Activity, or Consistency):
 - Do NOT write the word "score", and do not write the names WellPath, Activity, or Consistency. Do not restate the numeric value or its status word.
 - Read the provided overall value and the individual factor values, and match your tone to how they are actually doing:
@@ -546,7 +553,7 @@ RECENT TREND DATA:
 ${JSON.stringify(compactTrends)}
 
 TYPE:
-${isCycle ? 'Cycle analysis — interpret the already-calculated prediction and corroborating physiological signals; never recalculate the date, never diagnose' : isPrediction ? 'Trend analysis — name the 1-2 most consistent recent trends and how to build on or improve each; do NOT forecast future values' : isMood ? 'Mood analysis — explain which physiological factors most likely affect their mood, using the provided correlations' : isScore ? 'Overall score — skip any summary; target the weakest factors with one concrete action' : isClinical ? 'Clinical/range KPI' : 'Lifestyle KPI'}
+${isCycle ? 'Cycle analysis — interpret the already-calculated prediction and corroborating physiological signals; never recalculate the date, never diagnose' : isNutrition ? 'Nutrition analysis — read the logged meals in mealLog and give one grounded conclusion about their eating pattern plus one realistic change; never invent foods' : isPrediction ? 'Trend analysis — name the 1-2 most consistent recent trends and how to build on or improve each; do NOT forecast future values' : isMood ? 'Mood analysis — explain which physiological factors most likely affect their mood, using the provided correlations' : isScore ? 'Overall score — skip any summary; target the weakest factors with one concrete action' : isClinical ? 'Clinical/range KPI' : 'Lifestyle KPI'}
 `;
 }
 

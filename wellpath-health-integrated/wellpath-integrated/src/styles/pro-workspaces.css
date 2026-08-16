@@ -37,7 +37,7 @@
 .coach-actions button:hover { border-color: var(--teal); background: var(--surface-soft); }
 .coach-actions button > svg:first-child { grid-column: 1 / -1; color: var(--teal-dark); }
 .coach-actions button > svg:last-child { color: var(--muted); }
-.coach-actions span { overflow-wrap: anywhere; font-size: 10px; font-weight: 850; }
+.coach-actions span { overflow-wrap: anywhere; font-size: 10px; font-weight: 800; }
 
 .coach-activity-panel, .coach-feedback-card, .coach-agenda { padding: 15px; }
 .coach-panel-title > strong { color: var(--teal-dark); font-size: 21px; }
@@ -49,7 +49,7 @@
 .coach-bars button > span { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 100%; }
 .coach-bars i { display: block; width: min(100%, 20px); min-height: 8px; border-radius: 3px 3px 1px 1px; background: var(--blue); transform-origin: bottom; animation: trainerBarRise 420ms cubic-bezier(.16, 1, .3, 1) both; }
 .coach-bars small { font-size: 8px; }
-.coach-inline-link, .admin-panel-link, .clinical-inline-action { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; border: 0; padding: 5px 0; background: transparent; color: var(--teal-dark); font-size: 10px; font-weight: 850; }
+.coach-inline-link, .admin-panel-link, .clinical-inline-action { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; border: 0; padding: 5px 0; background: transparent; color: var(--teal-dark); font-size: 10px; font-weight: 800; }
 
 .coach-feedback-card { width: 100%; color: var(--text); text-align: left; }
 .coach-feedback-card > .coach-panel-title > svg { color: var(--muted); }
@@ -92,7 +92,7 @@
 .clinical-section-heading h2, .clinical-section-heading p { margin: 0; }
 .clinical-section-heading h2 { font-size: 15px; }
 .clinical-section-heading p { margin-top: 3px; color: var(--muted); font-size: 10px; }
-.clinical-section-heading > button, .clinical-signal-list button, .clinical-review-button, .clinical-range button { min-height: 32px; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--surface); color: var(--teal-dark); font-size: 9px; font-weight: 850; }
+.clinical-section-heading > button, .clinical-signal-list button, .clinical-review-button, .clinical-range button { min-height: 32px; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--surface); color: var(--teal-dark); font-size: 9px; font-weight: 800; }
 .clinical-section-heading > button { display: inline-flex; align-items: center; gap: 4px; border: 0; }
 .clinical-table-wrap { overflow-x: auto; }
 .clinical-review-table { width: 100%; min-width: 760px; border-collapse: collapse; }
@@ -103,7 +103,7 @@
 .clinical-patient-cell > span { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 50%; background: var(--surface-soft); color: var(--teal-dark); font-size: 9px; font-weight: 900; }
 .clinical-patient-cell strong { font-size: 10px; white-space: nowrap; }
 .clinical-reason { display: block; max-width: 250px; overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
-.clinical-unassigned { color: var(--amber-text); font-weight: 850; }
+.clinical-unassigned { color: var(--amber-text); font-weight: 800; }
 .clinical-review-button { min-width: 58px; }
 .clinical-lower-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(260px, .85fr); gap: 14px; }
 .clinical-trends-panel { grid-row: span 2; }
@@ -185,23 +185,23 @@
 .admin-command-heading h2, .admin-command-heading p { margin: 0; }.admin-command-heading h2 { font-size: 14px; }.admin-command-heading p { margin-top: 3px; color: var(--muted); font-size: 9px; }
 .admin-command-heading > svg { color: var(--teal-dark); }
 .admin-command-heading > label select, .admin-command-heading > button { min-height: 32px; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--surface); color: var(--text); font-size: 9px; }
-.admin-command-heading > button { display: inline-flex; align-items: center; gap: 4px; border: 0; color: var(--teal-dark); font-weight: 850; }
+.admin-command-heading > button { display: inline-flex; align-items: center; gap: 4px; border: 0; color: var(--teal-dark); font-weight: 800; }
 .admin-attention-table-wrap { overflow-x: auto; }
 .admin-attention-table { width: 100%; min-width: 690px; border-collapse: collapse; }
 .admin-attention-table th { padding: 8px; border-block: 1px solid var(--line); background: var(--surface-soft); color: var(--muted); font-size: 8px; text-align: left; }
 .admin-attention-table td { padding: 9px 8px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 9px; }
 .admin-attention-table td strong, .admin-attention-table td small { display: block; }.admin-attention-table td strong { color: var(--text); font-size: 9px; }.admin-attention-table td small { margin-top: 2px; font-size: 8px; }
-.admin-attention-table td button { min-height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; background: var(--surface); color: var(--teal-dark); font-size: 9px; font-weight: 850; }
-.admin-severity, .admin-queue-status { border-radius: 5px; padding: 4px 6px; background: var(--surface-soft); font-size: 8px; font-weight: 850; text-transform: capitalize; }
+.admin-attention-table td button { min-height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; background: var(--surface); color: var(--teal-dark); font-size: 9px; font-weight: 800; }
+.admin-severity, .admin-queue-status { border-radius: 5px; padding: 4px 6px; background: var(--surface-soft); font-size: 8px; font-weight: 800; text-transform: capitalize; }
 .admin-severity.high { background: color-mix(in srgb, var(--coral) 11%, var(--surface)); color: var(--coral); }.admin-severity.medium { background: color-mix(in srgb, var(--amber) 13%, var(--surface)); color: var(--amber-text); }
 .admin-healthy-empty { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 116px; border: 1px dashed var(--line); border-radius: 7px; padding: 14px; background: var(--surface-soft); }
 .admin-healthy-empty > svg { color: var(--green); }.admin-healthy-empty strong, .admin-healthy-empty p { display: block; margin: 0; }.admin-healthy-empty strong { font-size: 11px; }.admin-healthy-empty p { margin-top: 3px; color: var(--muted); font-size: 9px; }
-.admin-healthy-empty button { display: inline-flex; align-items: center; gap: 4px; min-height: 34px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--surface); color: var(--teal-dark); font-size: 9px; font-weight: 850; }
+.admin-healthy-empty button { display: inline-flex; align-items: center; gap: 4px; min-height: 34px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--surface); color: var(--teal-dark); font-size: 9px; font-weight: 800; }
 .admin-service-table, .admin-command-audit { display: grid; }
 .admin-service-table > div { display: grid; grid-template-columns: minmax(0, 1fr) 110px 75px; align-items: center; gap: 8px; min-height: 42px; border-bottom: 1px solid var(--line); font-size: 9px; }
 .admin-service-table .header { min-height: 30px; background: var(--surface-soft); color: var(--muted); font-size: 8px; font-weight: 800; }
 .admin-service-table strong { text-transform: capitalize; }.admin-service-table time { color: var(--muted); }
-.admin-service-status { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 8px; font-weight: 850; text-transform: capitalize; }
+.admin-service-status { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 8px; font-weight: 800; text-transform: capitalize; }
 .admin-service-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
 .admin-service-status.operational, .admin-service-status.connected { color: var(--green-text); }.admin-service-status.operational i, .admin-service-status.connected i { background: var(--green); }
 .admin-service-status.degraded, .admin-service-status.not_connected { color: var(--amber-text); }.admin-service-status.degraded i, .admin-service-status.not_connected i { background: var(--amber); }

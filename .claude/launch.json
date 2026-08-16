@@ -4,8 +4,14 @@
     {
       "name": "wellpath-frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "C:/Users/Mahir/Desktop/WellPath/wellpath-health-integrated/wellpath-integrated", "run", "dev", "--", "--port", "5173", "--strictPort"],
+      "runtimeArgs": ["--prefix", "./wellpath-health-integrated/wellpath-integrated", "run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "wellpath-backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./wellpath-health-integrated/wellpath-integrated/backend", "run", "dev"],
+      "port": 3000
     }
   ]
 }

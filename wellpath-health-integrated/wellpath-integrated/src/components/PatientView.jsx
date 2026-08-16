@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Home, Activity, Dumbbell, Settings, Stethoscope,
-  LogOut, Moon, Sun, Smile, Droplets, Settings as SettingsIcon, MoreHorizontal, Sparkles, Gauge, Utensils
+  LogOut, Moon, Sun, Smile, Droplets, MoreHorizontal, Gauge, Utensils
 } from 'lucide-react';
 import { api } from '../api';
 import { PatientAppHeader } from './patient/PatientAppHeader.jsx';
@@ -13,7 +13,6 @@ import { ClinicalDataPage } from './patient/ClinicalDataPage.jsx';
 import { PatientSettingsPage } from './patient/PatientSettingsPage.jsx';
 import { MoodPage } from './patient/MoodPage.jsx';
 import { CyclePage } from './patient/CyclePage.jsx';
-import { AiInsightsPage } from './patient/AiInsightsPage.jsx';
 import { RiskSignal } from './risksignal/RiskSignal.jsx';
 import { NutritionTab } from './nutrition/NutritionTab.jsx';
 import { HealthProfileProvider } from './shared/profileContext.jsx';
@@ -60,24 +59,24 @@ function buildSummaryMetrics(patientData, healthLog) {
 
   const aiPromptTemplates = {
     steps: [
-      { id: 'steps_change', label: 'What shaped my steps?', question: 'What recent habit pattern may have shaped my step count, and what small action fits today?' },
-      { id: 'steps_focus', label: 'Choose one movement goal', question: 'Which one realistic movement goal best fits my recent activity pattern today?' },
+      { id: 'steps_change', label: 'What’s driving my steps?', question: 'What’s been shaping my step count lately, and what’s one easy thing I could try today?' },
+      { id: 'steps_focus', label: 'Pick a movement goal', question: 'What’s one realistic movement goal that fits how I’ve been moving lately?' },
     ],
     sleep: [
-      { id: 'sleep_pattern', label: 'Spot my sleep pattern', question: 'What simple pattern stands out in my recent sleep history?' },
-      { id: 'sleep_better', label: 'Plan tonight’s wind-down', question: 'Suggest one low-pressure wind-down step based on my recent sleep pattern.' },
+      { id: 'sleep_pattern', label: 'Spot my sleep pattern', question: 'What stands out about how I’ve been sleeping lately?' },
+      { id: 'sleep_better', label: 'Plan tonight’s wind-down', question: 'What’s one easy wind-down idea that fits my recent sleep?' },
     ],
     heartRate: [
-      { id: 'hr_meaning', label: 'Describe the recent pattern', question: 'Describe how my resting heart-rate pattern has changed without diagnosing anything.' },
-      { id: 'hr_context', label: 'Add everyday context', question: 'Which everyday habits can add context to a resting heart-rate reading?' },
+      { id: 'hr_meaning', label: 'How’s my resting HR trending?', question: 'How has my resting heart rate been trending lately, in plain terms?' },
+      { id: 'hr_context', label: 'What can nudge it?', question: 'Which everyday habits tend to nudge resting heart rate up or down?' },
     ],
     exercise: [
-      { id: 'exercise_balance', label: 'Review my activity balance', question: 'How balanced has my recent exercise routine been compared with my own goal?' },
-      { id: 'exercise_next', label: 'Pick a manageable session', question: 'Suggest one manageable activity session that fits my recent routine today.' },
+      { id: 'exercise_balance', label: 'How’s my activity balance?', question: 'How balanced has my exercise been lately compared with my own goal?' },
+      { id: 'exercise_next', label: 'Pick a session for today', question: 'What’s one doable workout that fits my recent routine today?' },
     ],
     recovery: [
-      { id: 'recovery_score', label: 'What shaped recovery?', question: 'Which sleep or movement habit most influenced my recent recovery pattern?' },
-      { id: 'recovery_plan', label: 'Choose a recovery step', question: 'Suggest one gentle recovery habit that fits my recent pattern today.' },
+      { id: 'recovery_score', label: 'What’s shaping recovery?', question: 'Which sleep or movement habit has been shaping how recovered I feel?' },
+      { id: 'recovery_plan', label: 'Pick a recovery step', question: 'What’s one gentle recovery habit that fits where I’m at today?' },
     ],
   };
 
@@ -345,11 +344,9 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     ...(tracksCycle ? [['cycle', 'Cycle', Droplets]] : []),
   ];
   const moreNav = [
-    ['insights', 'AI', Sparkles],
-    ['risk', 'Risk Signal', Gauge],
+    ['risk', 'Risk Signals', Gauge],
     ['trainer', 'Partner', Dumbbell],
     ['clinical', 'Health record', Stethoscope],
-    ['settings', 'Settings', SettingsIcon],
   ];
 
   // ===== UPDATED: AI function with Groq API integration =====
@@ -476,7 +473,11 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   return (
     <HealthProfileProvider initial={initialProfile}>
     <section className={`patient-app-shell density-${uiPreferences.density}${uiPreferences.reduceMotion ? ' reduce-motion' : ''}`}>
-      <PatientAppHeader patientData={currentPatient} aiEnabled={aiEnabled} />
+      <PatientAppHeader
+        patientData={currentPatient}
+        aiEnabled={aiEnabled}
+        onOpenSettings={() => { more.close(); setBreakdownMetric(null); setScreen('settings'); }}
+      />
       <div className="patient-screen-stage">
         {screen === 'dashboard' && (
           <PatientToday
@@ -517,17 +518,6 @@ function PatientView({ user, onLogout, theme, setTheme }) {
             patientId={patientId}
             healthLog={healthLog}
             aiEnabled={aiEnabled}
-            onGenerateAiInsight={generateDashboardAiInsight}
-          />
-        )}
-        {screen === 'insights' && (
-          <AiInsightsPage
-            metrics={metrics}
-            aiEnabled={aiEnabled}
-            setAiEnabled={updateAiEnabled}
-            aiAnswer={aiAnswer}
-            onAskAi={askAi}
-            healthLog={healthLog}
             onGenerateAiInsight={generateDashboardAiInsight}
           />
         )}

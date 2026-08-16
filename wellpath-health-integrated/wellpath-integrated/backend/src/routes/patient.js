@@ -52,21 +52,20 @@ function ensurePatientSupportTables() {
         CONSTRAINT fk_patient_health_connections_patient FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
       )`),
       pool.query(`CREATE TABLE IF NOT EXISTS patient_food_log (
-        food_log_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        food_log_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         patient_id INT NOT NULL,
-        record_date DATE NOT NULL,
-        food_name VARCHAR(180) NOT NULL,
-        calories DECIMAL(8,2) NOT NULL DEFAULT 0,
-        protein_g DECIMAL(8,2) NOT NULL DEFAULT 0,
-        carbs_g DECIMAL(8,2) NOT NULL DEFAULT 0,
-        sugar_g DECIMAL(8,2) NOT NULL DEFAULT 0,
-        fibre_g DECIMAL(8,2) NOT NULL DEFAULT 0,
-        fat_g DECIMAL(8,2) NOT NULL DEFAULT 0,
-        saturated_fat_g DECIMAL(8,2) NOT NULL DEFAULT 0,
-        sodium_mg DECIMAL(8,2) NOT NULL DEFAULT 0,
-        source VARCHAR(30) NOT NULL DEFAULT 'manual',
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_patient_food_date (patient_id, record_date),
+        food_name VARCHAR(160) NOT NULL,
+        kcal DECIMAL(10,2) NOT NULL DEFAULT 0,
+        protein_g DECIMAL(10,2) NOT NULL DEFAULT 0,
+        carbs_g DECIMAL(10,2) NOT NULL DEFAULT 0,
+        sugar_g DECIMAL(10,2) NOT NULL DEFAULT 0,
+        fibre_g DECIMAL(10,2) NOT NULL DEFAULT 0,
+        fat_g DECIMAL(10,2) NOT NULL DEFAULT 0,
+        satfat_g DECIMAL(10,2) NOT NULL DEFAULT 0,
+        sodium_mg DECIMAL(10,2) NOT NULL DEFAULT 0,
+        ai_estimated TINYINT(1) NOT NULL DEFAULT 0,
+        logged_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_patient_food_date (patient_id, logged_at),
         CONSTRAINT fk_patient_food_log_patient FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
       )`),
     ]).catch((error) => {
@@ -547,17 +546,19 @@ router.get('/:id/nutrition-logs', requireOwnPatient, asyncRoute(async (req, res)
   await ensurePatientSupportTables();
   const days = Math.min(Math.max(Number.parseInt(req.query.days, 10) || 45, 1), 365);
   const [rows] = await pool.query(`
-    SELECT food_log_id AS id, record_date AS recordDate, food_name AS name,
-      calories AS kcal, protein_g AS protein, carbs_g AS carbs, sugar_g AS sugar,
-      fibre_g AS fibre, fat_g AS fat, saturated_fat_g AS satfat, sodium_mg AS sodium,
-      source, created_at AS createdAt
+    SELECT food_log_id AS id, DATE(logged_at) AS recordDate, food_name AS name,
+      kcal, protein_g AS protein, carbs_g AS carbs, sugar_g AS sugar,
+      fibre_g AS fibre, fat_g AS fat, satfat_g AS satfat, sodium_mg AS sodium,
+      ai_estimated, logged_at AS createdAt
     FROM patient_food_log
-    WHERE patient_id = ? AND record_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-    ORDER BY record_date ASC, food_log_id ASC
+    WHERE patient_id = ? AND logged_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+    ORDER BY logged_at ASC, food_log_id ASC
   `, [req.params.id, days]);
   res.json(rows.map((row) => ({
-    ...row,
+    id: row.id,
+    name: row.name,
     recordDate: new Date(row.recordDate).toISOString().slice(0, 10),
+    source: row.ai_estimated ? 'ai_estimate' : 'manual',
     ...Object.fromEntries(['kcal', 'protein', 'carbs', 'sugar', 'fibre', 'fat', 'satfat', 'sodium'].map((key) => [key, Number(row[key]) || 0])),
   })));
 }));
@@ -571,9 +572,9 @@ router.post('/:id/nutrition-logs', requireOwnPatient, asyncRoute(async (req, res
   const number = (key) => Math.max(0, Number(entry[key]) || 0);
   const [result] = await pool.query(`
     INSERT INTO patient_food_log
-      (patient_id, record_date, food_name, calories, protein_g, carbs_g, sugar_g, fibre_g, fat_g, saturated_fat_g, sodium_mg, source)
+      (patient_id, logged_at, food_name, kcal, protein_g, carbs_g, sugar_g, fibre_g, fat_g, satfat_g, sodium_mg, ai_estimated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [req.params.id, recordDate, name, number('kcal'), number('protein'), number('carbs'), number('sugar'), number('fibre'), number('fat'), number('satfat'), number('sodium'), entry.source === 'ai_estimate' ? 'ai_estimate' : 'manual']);
+  `, [req.params.id, recordDate, name, number('kcal'), number('protein'), number('carbs'), number('sugar'), number('fibre'), number('fat'), number('satfat'), number('sodium'), entry.source === 'ai_estimate' ? 1 : 0]);
   res.status(201).json({ id: result.insertId, recordDate, name, ...Object.fromEntries(['kcal', 'protein', 'carbs', 'sugar', 'fibre', 'fat', 'satfat', 'sodium'].map((key) => [key, number(key)])), source: entry.source === 'ai_estimate' ? 'ai_estimate' : 'manual' });
 }));
 

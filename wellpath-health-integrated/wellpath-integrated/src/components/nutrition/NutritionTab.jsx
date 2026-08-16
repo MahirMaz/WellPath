@@ -24,7 +24,7 @@ export function NutritionTab({ patientId, aiEnabled = true, onGenerateAiInsight,
       </header>
 
       {/* ---- food logger: AI estimate or manual entry -> nutrient totals -> guideline checks ---- */}
-      <NutritionLogger patientId={patientId} healthLog={healthLog} />
+      <NutritionLogger patientId={patientId} healthLog={healthLog} aiEnabled={aiEnabled} onGenerateAiInsight={onGenerateAiInsight} />
 
       {/* ---- habits that feed the Risk Signal ---- */}
       <section className="nt-inputs">

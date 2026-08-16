@@ -417,6 +417,25 @@ button {
   font-weight: 900;
 }
 
+.header-settings-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--teal-dark);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.header-settings-btn:hover {
+  background: color-mix(in srgb, var(--surface-soft) 82%, var(--wellpath-accent));
+  border-color: var(--wellpath-accent);
+  color: var(--wellpath-accent);
+}
+
 .patient-screen-stage,
 .mobile-flow {
   display: grid;
@@ -456,7 +475,7 @@ button {
 }
 
 .patient-bottom-tabs button.active {
-  background: var(--blue);
+  background: linear-gradient(135deg, var(--teal), #0aa9b7);
   color: white;
 }
 
@@ -526,7 +545,7 @@ button {
 }
 
 .patient-more-menu button.active {
-  background: var(--blue);
+  background: linear-gradient(135deg, var(--teal), #0aa9b7);
   color: white;
 }
 
@@ -578,7 +597,7 @@ button {
 }
 
 .breakdown-range button.active {
-  background: var(--blue);
+  background: linear-gradient(135deg, var(--teal), #0aa9b7);
   color: #fff;
 }
 
@@ -734,7 +753,7 @@ button {
 .patient-score-button span {
   color: var(--text);
   font-size: 13px;
-  font-weight: 950;
+  font-weight: 900;
   text-align: center;
   line-height: 1.15;
 }
@@ -847,7 +866,7 @@ button {
   color: #ffffff;
   font-size: 12px;
   font-style: normal;
-  font-weight: 950;
+  font-weight: 900;
   white-space: nowrap;
 }
 
@@ -874,7 +893,7 @@ button {
 .focused-score-factors > span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 950;
+  font-weight: 900;
   text-transform: uppercase;
 }
 
@@ -979,8 +998,8 @@ button {
   margin: 0;
   color: var(--text);
   font-size: 14px;
-  font-weight: 550;
-  line-height: 1.45;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 /* ===== Reusable interactive AI box (per tab) ===== */
@@ -1618,7 +1637,7 @@ button {
   height: calc(var(--bar-track) + 10px);
   color: var(--muted);
   font-size: 8px;
-  font-weight: 850;
+  font-weight: 800;
   line-height: 1;
   text-align: right;
 }
@@ -1713,7 +1732,7 @@ button {
   min-height: 106px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .expanded-kpi-stats {
@@ -1733,7 +1752,7 @@ button {
 .expanded-kpi-stats span {
   color: var(--muted);
   font-size: 9px;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .expanded-kpi-stats strong {
@@ -1788,7 +1807,7 @@ button {
   background: color-mix(in srgb, var(--kpi-color) 14%, transparent);
   color: var(--kpi-color);
   font-size: 11px;
-  font-weight: 950;
+  font-weight: 900;
   cursor: pointer;
 }
 
@@ -2950,7 +2969,7 @@ button {
 
 /* ===== Patient personalization ===== */
 .settings-customize-panel { gap: 12px; }
-.settings-count { border-radius: 999px; padding: 4px 8px; background: var(--surface-soft); color: var(--teal-dark); font-size: 10px; font-weight: 850; }
+.settings-count { border-radius: 999px; padding: 4px 8px; background: var(--surface-soft); color: var(--teal-dark); font-size: 10px; font-weight: 800; }
 .settings-card-order { display: grid; gap: 7px; }
 .settings-card-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 46px; padding: 7px 8px 7px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .settings-card-row label { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--text); font-size: 12px; font-weight: 800; }
@@ -2960,7 +2979,7 @@ button {
 .reorder-actions button:disabled { cursor: default; opacity: 0.35; }
 .setting-control-block { display: grid; gap: 7px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--text); font-size: 12px; font-weight: 800; }
 .settings-segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; padding: 4px; border-radius: 7px; background: var(--surface-soft); }
-.settings-segmented button { min-height: 34px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 850; }
+.settings-segmented button { min-height: 34px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 800; }
 .settings-segmented button.active { background: var(--surface); color: var(--teal-dark); box-shadow: 0 1px 5px rgba(14, 54, 70, 0.1); }
 .density-compact .mobile-flow { gap: 9px; }
 .density-compact .patient-kpi-grid { gap: 6px; }
@@ -2985,6 +3004,58 @@ button {
 .nutrition-pattern-card strong { color: var(--text); font-size: 12px; }
 .nutrition-pattern-card p { margin: 4px 0; color: var(--text); font-size: 11px; line-height: 1.45; }
 .nutrition-pattern-card small { color: var(--muted); font-size: 9px; }
+
+/* ===== Meal history box (calendar browser + AI read) ===== */
+.meal-history-box {
+  margin-top: 14px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(var(--surface-rgb), 0.94);
+  box-shadow: 0 10px 28px rgba(22, 85, 118, 0.07);
+}
+.mh-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mh-head h3 { margin: 0; font-size: 15px; color: var(--text); }
+.mh-head .nt-note-plain { margin: 3px 0 0; }
+.mh-views { display: inline-flex; gap: 3px; padding: 3px; border-radius: 9px; background: var(--surface-soft); }
+.mh-views button { min-height: 30px; padding: 0 11px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.mh-views button.on { background: linear-gradient(135deg, var(--teal), #0aa9b7); color: #fff; }
+
+.mh-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 13px 0 10px; }
+.mh-nav strong { font-size: 13.5px; color: var(--text); text-align: center; flex: 1; }
+.mh-nav button { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--teal-dark); cursor: pointer; }
+.mh-nav button:hover { border-color: var(--wellpath-accent); color: var(--wellpath-accent); }
+
+.mh-cal-head, .mh-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.mh-cal-head { margin-bottom: 5px; }
+.mh-cal-head span { text-align: center; font-size: 10px; font-weight: 800; color: var(--muted); }
+.mh-cal-empty { aspect-ratio: 1; }
+.mh-cal-cell { position: relative; aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); font-family: inherit; cursor: pointer; }
+.mh-cal-cell .mh-cal-num { font-size: 12px; font-weight: 700; }
+.mh-cal-cell.has { border-color: color-mix(in srgb, var(--wellpath-accent) 45%, var(--line)); background: color-mix(in srgb, var(--wellpath-accent) 12%, var(--surface)); color: var(--text); }
+.mh-cal-cell.today { outline: 2px solid var(--wellpath-accent); outline-offset: -2px; }
+.mh-cal-cell:hover { border-color: var(--wellpath-accent); }
+.mh-cal-dot { position: absolute; top: 3px; right: 4px; min-width: 15px; height: 15px; padding: 0 3px; display: grid; place-items: center; border-radius: 999px; background: linear-gradient(135deg, var(--teal), #0aa9b7); color: #fff; font-size: 9px; font-weight: 800; }
+
+.mh-week { display: grid; gap: 7px; }
+.mh-week-day { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; background: var(--surface); }
+.mh-week-day.empty { opacity: 0.62; }
+.mh-week-daybtn { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; border: 0; background: transparent; padding: 0; cursor: pointer; font-family: inherit; text-align: left; }
+.mh-week-daybtn strong { font-size: 12.5px; color: var(--text); }
+.mh-week-daybtn em { font-size: 11px; font-style: normal; color: var(--muted); }
+.mh-food-mini { list-style: none; margin: 7px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 5px; }
+.mh-food-mini li { padding: 3px 8px; border-radius: 999px; background: var(--surface-soft); color: var(--text); font-size: 10.5px; }
+.mh-food-mini li.mh-more { color: var(--muted); }
+
+.mh-day-sum { margin: 0 0 8px; color: var(--teal-dark); font-size: 12px; font-weight: 800; }
+.mh-food-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mh-food-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+.mh-food-list li span { display: inline-flex; align-items: center; gap: 5px; color: var(--text); font-size: 12.5px; }
+.mh-food-list li em { font-style: normal; color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+
+.mh-ai { margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.mh-ai .nmi-text { margin: 0; color: var(--text); font-size: 13px; line-height: 1.5; }
+.mh-ai .mood-ai-btn { justify-self: start; }
 
 @media (max-width: 430px) {
   .nl-title-row { align-items: stretch; flex-direction: column; }
@@ -4017,7 +4088,18 @@ button {
 .weight-delta.up { color: var(--coral); }
 .weight-delta.down { color: var(--wellpath-accent); }
 .exercise-form-row.weight-row { grid-template-columns: 1fr auto; }
-.exercise-form-row.bp-row { grid-template-columns: repeat(3, 1fr) auto; }
+.exercise-form-row.bp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+.exercise-form-row.bp-row input {
+  flex: 1 1 90px;   /* shrink to fit narrow cards, grow to share space */
+  min-width: 0;     /* allow shrinking below the input's intrinsic width */
+  max-width: 160px; /* never balloon on wide clinician layouts */
+}
+.exercise-form-row.bp-row .secondary-btn { flex: 0 0 auto; }
 
 /* Notepad (questions for trainer / clinician) */
 .notepad {
