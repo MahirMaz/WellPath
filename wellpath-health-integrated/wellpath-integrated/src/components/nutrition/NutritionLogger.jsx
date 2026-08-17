@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Info, Loader2, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Info, Loader2, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
 import { api } from '../../api';
 import { buildDailyNutritionTotals, buildFoodHealthAssociations } from '../../utils/foodPatterns.js';
 
@@ -96,6 +96,8 @@ function groupEntriesByDate(logged) {
 // and see exactly what was eaten. The AI read of the whole log sits underneath.
 function MealHistory({ logged, aiEnabled, onGenerateAiInsight, mealInsight, mealInsightLoading, onReadMealLog }) {
   const [view, setView] = useState('month');
+  // Collapsed by default: the full calendar is opt-in, not forced on every user.
+  const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState(() => {
     const dates = logged.map((e) => (e.recordDate || '').slice(0, 10)).filter(Boolean).sort();
     return dates.length ? new Date(`${dates[dates.length - 1]}T00:00:00`) : new Date();
@@ -140,16 +142,23 @@ function MealHistory({ logged, aiEnabled, onGenerateAiInsight, mealInsight, meal
   );
 
   return (
-    <section className="meal-history-box" aria-label="Meal history">
-      <div className="mh-head">
-        <div><h3>Meal history</h3><p className="nt-note-plain">Look back at what you ate, by month, week, or day.</p></div>
-        <div className="mh-views" role="group" aria-label="History view">
-          {['month', 'week', 'day'].map((v) => (
-            <button key={v} type="button" className={view === v ? 'on' : ''} onClick={() => setView(v)}>
-              {v[0].toUpperCase() + v.slice(1)}
-            </button>
-          ))}
+    <section className={`meal-history-box${open ? ' open' : ''}`} aria-label="Meal history">
+      <button type="button" className="mh-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <div className="mh-toggle-text">
+          <h3>Meal history</h3>
+          <p className="nt-note-plain">Look back at what you ate, by month, week, or day.</p>
         </div>
+        <ChevronDown size={18} className="mh-chevron" aria-hidden="true" />
+      </button>
+
+      {open && (
+      <div className="mh-body">
+      <div className="mh-views" role="group" aria-label="History view">
+        {['month', 'week', 'day'].map((v) => (
+          <button key={v} type="button" className={view === v ? 'on' : ''} onClick={() => setView(v)}>
+            {v[0].toUpperCase() + v.slice(1)}
+          </button>
+        ))}
       </div>
 
       <div className="mh-nav">
@@ -234,6 +243,8 @@ function MealHistory({ logged, aiEnabled, onGenerateAiInsight, mealInsight, meal
             {mealInsight ? 'Refresh' : 'Read my meal log'}
           </button>
         </div>
+      )}
+      </div>
       )}
     </section>
   );

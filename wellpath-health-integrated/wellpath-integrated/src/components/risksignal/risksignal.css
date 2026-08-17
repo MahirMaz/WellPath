@@ -83,10 +83,12 @@
 .rs-edit-actions { display: flex; gap: 8px; }
 .rs-submit { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--wellpath-accent); background: var(--wellpath-accent); color: #06232a; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
 .rs-submit:active { transform: scale(0.98); }
-.rs-stats-view { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.rs-stat { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; background: var(--surface-soft); }
-.rs-stat span { font-size: 11px; color: var(--muted); }
-.rs-stat strong { font-size: 15px; color: var(--text); font-weight: 700; }
+.rs-stats-view { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+/* Drop back to 2 columns on small phones so the tiles stay readable. */
+@media (max-width: 480px) { .rs-stats-view { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rs-stat { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 9px; padding: 7px 9px; background: var(--surface-soft); }
+.rs-stat span { font-size: 10px; color: var(--muted); }
+.rs-stat strong { font-size: 13px; color: var(--text); font-weight: 700; }
 
 .rs-bmi { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); }
 .rs-bmi strong { color: var(--text); }

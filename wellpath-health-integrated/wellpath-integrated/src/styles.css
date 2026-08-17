@@ -3017,6 +3017,18 @@ button {
 .mh-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .mh-head h3 { margin: 0; font-size: 15px; color: var(--text); }
 .mh-head .nt-note-plain { margin: 3px 0 0; }
+/* Collapsible header: the whole row is a button that expands the calendar. */
+.mh-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 0; border: 0; background: transparent;
+  font-family: inherit; text-align: left; cursor: pointer;
+}
+.mh-toggle-text h3 { margin: 0; font-size: 15px; color: var(--text); }
+.mh-toggle-text .nt-note-plain { margin: 3px 0 0; }
+.mh-chevron { flex: none; color: var(--muted); transition: transform 0.2s ease; }
+.meal-history-box.open .mh-chevron { transform: rotate(180deg); color: var(--teal-dark); }
+.mh-body { margin-top: 13px; }
+.mh-body .mh-nav { margin-top: 0; }
 .mh-views { display: inline-flex; gap: 3px; padding: 3px; border-radius: 9px; background: var(--surface-soft); }
 .mh-views button { min-height: 30px; padding: 0 11px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .mh-views button.on { background: linear-gradient(135deg, var(--teal), #0aa9b7); color: #fff; }
