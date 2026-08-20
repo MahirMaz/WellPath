@@ -476,12 +476,13 @@ function FocusedScoreCard({ score, aiEnabled, personalized, aiInsight, aiStatus,
     <article className={`focused-score-card bubble-anim ${statusToneClass(score.status)}`} onClick={onClose} style={{ '--score-color': score.color }}>
       <div className="focused-score-header">
         <span className="focused-score-icon"><HeaderIcon size={22} /></span>
-        <h2>{score.title}</h2>
+        <h2 tabIndex="0" aria-describedby={`score-description-${score.id}`}>{score.title}</h2>
         <div className="focused-score-number">
           <strong>{score.score ?? '--'}</strong>
           <span>%</span>
         </div>
         <em>{score.status}</em>
+        <p className="focused-score-description" id={`score-description-${score.id}`}>{score.description}</p>
         <button className="score-collapse-btn" onClick={(event) => {
           event.stopPropagation();
           onClose();
@@ -489,8 +490,6 @@ function FocusedScoreCard({ score, aiEnabled, personalized, aiInsight, aiStatus,
           <ChevronUp size={17} />
         </button>
       </div>
-
-      <p className="focused-score-description">{score.description}</p>
 
       {aiEnabled && (
         <div className="score-ai-insight">

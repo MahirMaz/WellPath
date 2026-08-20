@@ -796,6 +796,7 @@ button {
 }
 
 .focused-score-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -820,6 +821,13 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: help;
+}
+
+.focused-score-header h2:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--wellpath-accent) 58%, transparent);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .score-collapse-btn {
@@ -870,12 +878,41 @@ button {
   white-space: nowrap;
 }
 
-/* Description sits directly under the header — no bubble. */
+/* Hovering the score name fades its explanation over the title/score/status. */
 .focused-score-description {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 56px;
+  right: 44px;
+  display: flex;
+  align-items: center;
+  min-height: 46px;
   margin: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(var(--surface-rgb), 0.98);
   color: var(--muted);
-  font-size: 12.5px;
-  line-height: 1.4;
+  box-shadow: 0 6px 18px rgba(16, 35, 63, 0.12);
+  font-size: 11.5px;
+  line-height: 1.35;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(calc(-50% + 4px));
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 0s linear 180ms;
+}
+
+.focused-score-header h2:hover ~ .focused-score-description,
+.focused-score-header h2:focus-visible ~ .focused-score-description {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%);
+  transition-delay: 0s;
 }
 
 /* Status drives a --status-color used by the score ring and the status pill:
@@ -989,17 +1026,18 @@ button {
 
 .score-ai-insight strong {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: var(--wellpath-accent);
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .score-ai-insight p {
   margin: 0;
-  color: var(--text);
-  font-size: 14px;
+  color: var(--muted);
+  font-size: 12px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.45;
+  white-space: pre-line;
 }
 
 /* ===== Reusable interactive AI box (per tab) ===== */
@@ -1189,7 +1227,7 @@ button {
   }
 
   .score-ai-insight p {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
