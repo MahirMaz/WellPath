@@ -69,7 +69,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
           </span>
           <span>
             <strong>WellPath Health</strong>
-            <small>Complete local health tracking workspace</small>
+            <small>Your health data, connected and understood</small>
           </span>
         </div>
 
