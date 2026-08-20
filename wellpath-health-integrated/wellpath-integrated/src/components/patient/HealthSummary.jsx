@@ -20,6 +20,16 @@ const GOAL_EDITOR_CONFIG = Object.freeze({
   sedentary: { minimum: 1, maximum: 24, step: 0.1, suffix: 'hrs' },
 });
 
+// Metrics that add up across days, so a WEEKLY total is the natural way to frame
+// the goal (shown as the daily pace x7). Everything else (sleep per night,
+// sedentary hours) stays daily, since a weekly sum there is confusing.
+const WEEKLY_GOAL_METRICS = new Set(['steps', 'exercise', 'activeMinutes', 'activeCalories']);
+function goalCadence(cfg) {
+  return WEEKLY_GOAL_METRICS.has(cfg?.id)
+    ? { factor: 7, word: 'weekly' }
+    : { factor: 1, word: 'daily' };
+}
+
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
 const mean = (arr) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null);
 const withUnit = (value, unit) => (unit ? `${value} ${unit}` : `${value}`);
@@ -184,19 +194,22 @@ function goalSuggestion(series, stats, cfg) {
 
   const values = series.map((p) => p.value);
   const raw = cfg.dir === 'low' ? percentile(values, 0.25) : percentile(values, 0.75);
-  const numericValue = roundNice(raw, cfg.id);
-  const shown = withUnit(cfg.fmt(numericValue), cfg.unit).trim();
+  const numericValue = roundNice(raw, cfg.id); // daily pace (what we store)
+  // Frame the suggested figure in the metric's natural cadence (weekly total for
+  // metrics that accumulate across days), while keeping numericValue daily.
+  const cad = goalCadence(cfg);
+  const shown = withUnit(cfg.fmt(numericValue * cad.factor), cfg.unit).trim();
   const hitRate = stats.total ? stats.hits / stats.total : 0;
   const hasGoal = Number.isFinite(cfg.goal);
-  const noun = cfg.dir === 'low' ? 'limit' : 'target';
+  const noun = `${cad.word} ${cfg.dir === 'low' ? 'limit' : 'target'}`;
 
   let text;
   if (!hasGoal) {
     text = `No ${noun} set yet. Based on your last 30 days, about ${shown} would be a realistic ${noun}.`;
   } else if (hitRate < 0.2) {
     text = cfg.dir === 'low'
-      ? `You're over your limit most days (under it ${stats.hits} of ${stats.total}). Aim for about ${shown} as a first step — you manage that on your better days.`
-      : `You're meeting this goal on only ${stats.hits} of ${stats.total} days. A more reachable target is about ${shown} — you already hit that on your stronger days.`;
+      ? `You're over your limit ${stats.hits} of ${stats.total} days. A more realistic ${noun} is about ${shown}.`
+      : `You're meeting this goal on only ${stats.hits} of ${stats.total} days. A more reachable ${noun} is about ${shown}.`;
   } else if (hitRate > 0.85) {
     text = cfg.dir === 'low'
       ? `You're under your limit ${stats.hits} of ${stats.total} days — you could tighten it to about ${shown}.`
@@ -311,36 +324,45 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
   const latest = series.length ? series[series.length - 1].value : null;
   const editorConfig = GOAL_EDITOR_CONFIG[cfg.id];
   const goalEditorOpen = goalEditorMetric === cfg.id;
+  // Goals are stored per-day; some metrics are shown/edited as a weekly total.
+  const cad = goalCadence(cfg);
+  const cadWordCap = cad.word.charAt(0).toUpperCase() + cad.word.slice(1);
 
   const openGoalEditor = () => {
-    setGoalDraft(String(Number.isFinite(cfg.goal) ? cfg.goal : suggestion?.numericValue ?? ''));
+    const baseDaily = Number.isFinite(cfg.goal) ? cfg.goal : suggestion?.numericValue;
+    // Editor works in the displayed cadence (weekly total for some metrics).
+    setGoalDraft(Number.isFinite(baseDaily) ? String(baseDaily * cad.factor) : '');
     setGoalUpdate(null);
     setGoalEditorMetric(cfg.id);
   };
 
-  const saveAdjustedGoal = async (value, source) => {
-    const requestedValue = Number(String(value).replace(/,/g, ''));
-    if (!editorConfig || !Number.isFinite(requestedValue)
-      || requestedValue < editorConfig.minimum || requestedValue > editorConfig.maximum) {
+  // `displayValue` is in the shown cadence; we convert back to a daily value to store.
+  const saveAdjustedGoal = async (displayValue, source) => {
+    const requestedDisplay = Number(String(displayValue).replace(/,/g, ''));
+    const minDisplay = (editorConfig?.minimum ?? 0) * cad.factor;
+    const maxDisplay = (editorConfig?.maximum ?? 0) * cad.factor;
+    if (!editorConfig || !Number.isFinite(requestedDisplay)
+      || requestedDisplay < minDisplay || requestedDisplay > maxDisplay) {
       setGoalUpdate({
         tone: 'error',
-        text: `Enter a value between ${editorConfig?.minimum ?? 0} and ${editorConfig?.maximum ?? 0}.`,
+        text: `Enter a value between ${minDisplay.toLocaleString()} and ${maxDisplay.toLocaleString()}.`,
       });
       return;
     }
 
+    const requestedValue = requestedDisplay / cad.factor; // stored per-day
     setGoalSaving(true);
     setGoalUpdate(null);
     try {
       const saved = await onAdjustGoal(cfg.id, requestedValue);
-      const savedLabel = `${cfg.fmt(saved.value)} ${editorConfig.suffix}`.trim();
-      setGoalDraft(String(saved.value));
+      const savedLabel = `${cfg.fmt(saved.value * cad.factor)} ${editorConfig.suffix}`.trim();
+      setGoalDraft(String(saved.value * cad.factor));
       setGoalEditorMetric(null);
       setGoalUpdate({
         tone: 'success',
         text: source === 'suggested'
-          ? `Goal adjusted to the suggested ${savedLabel}.`
-          : `Goal updated to ${savedLabel}.`,
+          ? `${cadWordCap} ${cfg.label} goal set to the suggested ${savedLabel}.`
+          : `${cadWordCap} ${cfg.label} goal updated to ${savedLabel}.`,
       });
     } catch (error) {
       setGoalUpdate({ tone: 'error', text: error.message || 'The goal could not be updated.' });
@@ -366,7 +388,7 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
 
   const goalLabel = cfg.dir === 'range'
     ? (cfg.range && Number.isFinite(cfg.range[0]) ? `target ${cfg.range[0]}-${cfg.range[1]} ${cfg.unit}` : 'no target set')
-    : Number.isFinite(cfg.goal) ? `${cfg.dir === 'low' ? 'limit' : 'goal'} ${withUnit(cfg.fmt(cfg.goal), cfg.unit)}` : 'no goal set';
+    : Number.isFinite(cfg.goal) ? `${cad.word} ${cfg.dir === 'low' ? 'limit' : 'goal'} ${withUnit(cfg.fmt(cfg.goal * cad.factor), cfg.unit)}` : 'no goal set';
 
   return (
     <div className="mobile-flow">
@@ -451,7 +473,7 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
           setView={setView}
           total={total}
         />
-        <p className="trend-hint">Scroll or pinch to zoom · drag to pan · double-click to reset</p>
+        <p className="trend-hint">Scroll or pinch to zoom · drag to pan · double-click for last 7 days</p>
 
         {stats ? (
           <div className="breakdown-stats">
@@ -480,7 +502,7 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
                 <div className="goal-adjustment">
                   {!goalEditorOpen ? (
                     <button className="goal-adjust-trigger" type="button" onClick={openGoalEditor}>
-                      <SlidersHorizontal size={14} /> Adjust goal
+                      <SlidersHorizontal size={14} /> Adjust {cad.word} {cfg.label} goal
                     </button>
                   ) : (
                     <div className="goal-adjust-panel">
@@ -488,7 +510,7 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
                         className="goal-use-suggestion"
                         type="button"
                         disabled={goalSaving}
-                        onClick={() => saveAdjustedGoal(suggestion.numericValue, 'suggested')}
+                        onClick={() => saveAdjustedGoal(suggestion.numericValue * cad.factor, 'suggested')}
                       >
                         <Check size={14} /> Use suggested {suggestion.value}
                       </button>
@@ -499,9 +521,9 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
                             <input
                               id={`manual-goal-${cfg.id}`}
                               type="number"
-                              min={editorConfig.minimum}
-                              max={editorConfig.maximum}
-                              step={editorConfig.step}
+                              min={editorConfig.minimum * cad.factor}
+                              max={editorConfig.maximum * cad.factor}
+                              step={editorConfig.step * cad.factor}
                               value={goalDraft}
                               onChange={(event) => setGoalDraft(event.target.value)}
                               disabled={goalSaving}
@@ -768,7 +790,7 @@ function TrendChart({ series, color, goal, unit, fmt, view, setView, total }) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onPointerLeave={onPointerLeave}
-        onDoubleClick={zoomable ? () => setView(clampWindow(total - 365, total - 1, total)) : undefined}
+        onDoubleClick={zoomable ? () => setView(clampWindow(total - 7, total - 1, total)) : undefined}
       >
         <svg className="trend-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {goalY != null && <line x1="0" x2="100" y1={goalY} y2={goalY} className="trend-goal-line" />}

@@ -447,10 +447,10 @@ button {
   left: 50%;
   bottom: 10px;
   z-index: 30;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 4px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 2px;
   width: min(calc(100% - 20px), 430px);
   transform: translateX(-50%);
   border: 1px solid var(--line);
@@ -465,13 +465,16 @@ button {
   display: grid;
   place-items: center;
   gap: 3px;
+  flex: 0 0 auto;
   min-height: 54px;
+  padding-inline: 12px;
   border: 0;
   border-radius: 13px;
   background: transparent;
   color: var(--muted);
   font-size: 10px;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .patient-bottom-tabs button.active {
@@ -483,6 +486,7 @@ button {
 .patient-more-tab {
   position: relative;
   display: flex;
+  flex: 0 0 auto;
 }
 
 .patient-more-tab > button {
@@ -799,6 +803,7 @@ button {
 .focused-score-card:is([data-score-id="activity"], [data-score-id="consistency"]) {
   max-height: min(460px, calc(100dvh - 168px));
   overflow-y: auto;
+  overflow-x: hidden; /* overflow-y:auto promotes overflow-x to auto; keep horizontal locked */
   overscroll-behavior: contain;
   scrollbar-color: color-mix(in srgb, var(--wellpath-accent) 48%, transparent) transparent;
   scrollbar-width: thin;
@@ -807,8 +812,11 @@ button {
 .focused-score-header {
   position: relative;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  padding-right: 42px; /* leave room for the absolutely-positioned collapse button */
 }
 
 .focused-score-icon,
@@ -840,6 +848,9 @@ button {
 }
 
 .score-collapse-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: grid;
   place-items: center;
   width: 34px;
