@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Link2, Sparkles, Target, ChevronDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Check, Link2, Sparkles, Target, ChevronDown, TrendingUp, TrendingDown, Minus, SlidersHorizontal } from 'lucide-react';
 import { calculateRecoveryScore } from '../../utils/patientKpis.js';
 import { useBubbleReveal } from '../../utils/useBubbleReveal.js';
 import { PersonalizedHint } from './AiInsightBox.jsx';
@@ -10,6 +10,15 @@ const METRIC_COLORS = {
   steps: '#35d48d', sleep: '#8b7cf6', heartRate: '#ff5f7a', exercise: '#f59e0b',
   activeMinutes: '#38bdf8', recovery: '#14b8a6', activeCalories: '#f97316', sedentary: '#d6c62f', bloodPressure: '#a855f7',
 };
+
+const GOAL_EDITOR_CONFIG = Object.freeze({
+  steps: { minimum: 500, maximum: 100000, step: 100, suffix: 'steps' },
+  sleep: { minimum: 1, maximum: 16, step: 0.1, suffix: 'hrs' },
+  exercise: { minimum: 1, maximum: 600, step: 5, suffix: 'min' },
+  activeMinutes: { minimum: 1, maximum: 720, step: 5, suffix: 'min' },
+  activeCalories: { minimum: 25, maximum: 10000, step: 25, suffix: 'cal' },
+  sedentary: { minimum: 1, maximum: 24, step: 0.1, suffix: 'hrs' },
+});
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
 const mean = (arr) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null);
@@ -175,7 +184,8 @@ function goalSuggestion(series, stats, cfg) {
 
   const values = series.map((p) => p.value);
   const raw = cfg.dir === 'low' ? percentile(values, 0.25) : percentile(values, 0.75);
-  const shown = withUnit(cfg.fmt(roundNice(raw, cfg.id)), cfg.unit).trim();
+  const numericValue = roundNice(raw, cfg.id);
+  const shown = withUnit(cfg.fmt(numericValue), cfg.unit).trim();
   const hitRate = stats.total ? stats.hits / stats.total : 0;
   const hasGoal = Number.isFinite(cfg.goal);
   const noun = cfg.dir === 'low' ? 'limit' : 'target';
@@ -194,7 +204,7 @@ function goalSuggestion(series, stats, cfg) {
   } else {
     text = `Based on your last 30 days, a realistic ${noun} is about ${shown}.`;
   }
-  return { text, value: shown, noun };
+  return { text, value: shown, numericValue, noun };
 }
 
 // Preset zoom windows for the Breakdown chart. The chart is freely zoomable/
@@ -215,7 +225,7 @@ function clampWindow(start, end, total, minLen = MIN_ZOOM_DAYS) {
   return { start: s, end: s + len - 1 };
 }
 
-export function HealthSummary({ patientId = null, healthLog = [], patientData = {}, initialMetricId = null, aiEnabled = true, onGenerateAiInsight }) {
+export function HealthSummary({ patientId = null, healthLog = [], patientData = {}, initialMetricId = null, aiEnabled = true, onGenerateAiInsight, onAdjustGoal }) {
   const personalized = patientId ? getMemory(patientId).length > 0 : false;
   const configs = metricConfigs(patientData);
   const validInitial = configs.some((c) => c.id === initialMetricId) ? initialMetricId : 'steps';
@@ -245,6 +255,15 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
   const shownComparisons = comparisons.slice(0, 4);
   const [patternInsight, setPatternInsight] = useState(null);
   const [patternLoading, setPatternLoading] = useState(false);
+  const [goalEditorMetric, setGoalEditorMetric] = useState(null);
+  const [goalDraft, setGoalDraft] = useState('');
+  const [goalSaving, setGoalSaving] = useState(false);
+  const [goalUpdate, setGoalUpdate] = useState(null);
+
+  useEffect(() => {
+    setGoalEditorMetric(null);
+    setGoalUpdate(null);
+  }, [selectedId]);
 
   const explainPatterns = async () => {
     if (!aiEnabled || !onGenerateAiInsight || patternLoading) return;
@@ -290,6 +309,50 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
   const connections = buildConnections(healthLog);
   const color = METRIC_COLORS[cfg.id];
   const latest = series.length ? series[series.length - 1].value : null;
+  const editorConfig = GOAL_EDITOR_CONFIG[cfg.id];
+  const goalEditorOpen = goalEditorMetric === cfg.id;
+
+  const openGoalEditor = () => {
+    setGoalDraft(String(Number.isFinite(cfg.goal) ? cfg.goal : suggestion?.numericValue ?? ''));
+    setGoalUpdate(null);
+    setGoalEditorMetric(cfg.id);
+  };
+
+  const saveAdjustedGoal = async (value, source) => {
+    const requestedValue = Number(String(value).replace(/,/g, ''));
+    if (!editorConfig || !Number.isFinite(requestedValue)
+      || requestedValue < editorConfig.minimum || requestedValue > editorConfig.maximum) {
+      setGoalUpdate({
+        tone: 'error',
+        text: `Enter a value between ${editorConfig?.minimum ?? 0} and ${editorConfig?.maximum ?? 0}.`,
+      });
+      return;
+    }
+
+    setGoalSaving(true);
+    setGoalUpdate(null);
+    try {
+      const saved = await onAdjustGoal(cfg.id, requestedValue);
+      const savedLabel = `${cfg.fmt(saved.value)} ${editorConfig.suffix}`.trim();
+      setGoalDraft(String(saved.value));
+      setGoalEditorMetric(null);
+      setGoalUpdate({
+        tone: 'success',
+        text: source === 'suggested'
+          ? `Goal adjusted to the suggested ${savedLabel}.`
+          : `Goal updated to ${savedLabel}.`,
+      });
+    } catch (error) {
+      setGoalUpdate({ tone: 'error', text: error.message || 'The goal could not be updated.' });
+    } finally {
+      setGoalSaving(false);
+    }
+  };
+
+  const submitManualGoal = (event) => {
+    event.preventDefault();
+    saveAdjustedGoal(goalDraft, 'manual');
+  };
 
   // Caption reflects the visible window (a preset name, or the actual date range
   // once the user has zoomed/panned to something custom).
@@ -410,9 +473,51 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
         {suggestion && (
           <div className="breakdown-suggestion">
             <Target size={16} />
-            <div>
+            <div className="breakdown-suggestion-content">
               <strong>Suggested {suggestion.noun}: {suggestion.value}</strong>
               <p>{suggestion.text}</p>
+              {editorConfig && onAdjustGoal && (
+                <div className="goal-adjustment">
+                  {!goalEditorOpen ? (
+                    <button className="goal-adjust-trigger" type="button" onClick={openGoalEditor}>
+                      <SlidersHorizontal size={14} /> Adjust goal
+                    </button>
+                  ) : (
+                    <div className="goal-adjust-panel">
+                      <button
+                        className="goal-use-suggestion"
+                        type="button"
+                        disabled={goalSaving}
+                        onClick={() => saveAdjustedGoal(suggestion.numericValue, 'suggested')}
+                      >
+                        <Check size={14} /> Use suggested {suggestion.value}
+                      </button>
+                      <form className="goal-manual-form" onSubmit={submitManualGoal}>
+                        <label htmlFor={`manual-goal-${cfg.id}`}>Or enter your own {suggestion.noun}</label>
+                        <div className="goal-manual-row">
+                          <span className="goal-input-wrap">
+                            <input
+                              id={`manual-goal-${cfg.id}`}
+                              type="number"
+                              min={editorConfig.minimum}
+                              max={editorConfig.maximum}
+                              step={editorConfig.step}
+                              value={goalDraft}
+                              onChange={(event) => setGoalDraft(event.target.value)}
+                              disabled={goalSaving}
+                              aria-label={`${cfg.label} ${suggestion.noun}`}
+                            />
+                            <span>{editorConfig.suffix}</span>
+                          </span>
+                          <button type="submit" disabled={goalSaving || !goalDraft}>Save</button>
+                        </div>
+                      </form>
+                      <button className="goal-adjust-cancel" type="button" disabled={goalSaving} onClick={() => setGoalEditorMetric(null)}>Cancel</button>
+                    </div>
+                  )}
+                  {goalUpdate && <p className={`goal-adjust-message ${goalUpdate.tone}`} role="status">{goalUpdate.text}</p>}
+                </div>
+              )}
             </div>
           </div>
         )}

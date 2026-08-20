@@ -106,6 +106,11 @@ export const api = {
   // Patient
   getDashboard: (patientId) => request(`/patient/${patientId}/dashboard`),
   getTrends: (patientId) => request(`/patient/${patientId}/trends`),
+  updateMetricGoal: (patientId, metricId, value) =>
+    request(`/patient/${patientId}/metric-goals`, {
+      method: 'PATCH',
+      body: JSON.stringify({ metricId, value }),
+    }),
   getGoals: (patientId) => request(`/patient/${patientId}/goals`),
   getMoodLog: (patientId) => request(`/patient/${patientId}/mood`),
   getPeriods: (patientId) => request(`/patient/${patientId}/periods`),

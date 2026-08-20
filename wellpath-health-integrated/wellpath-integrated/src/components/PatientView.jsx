@@ -39,6 +39,15 @@ const defaultHealthConnections = [
   { provider: 'health_connect', status: 'not_connected', permissions: [], last_sync: null },
 ];
 
+const METRIC_GOAL_DASHBOARD_FIELDS = Object.freeze({
+  steps: 'step_goal',
+  sleep: 'sleep_goal_hours',
+  exercise: 'exercise_goal_minutes',
+  activeMinutes: 'active_minute_goal',
+  activeCalories: 'active_calorie_goal',
+  sedentary: 'sedentary_limit_hours',
+});
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -423,6 +432,18 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     return data.answer || "I'm having trouble generating this insight right now. Please try again later.";
   }, [aiEnabled, patientId]);
 
+  const updateMetricGoal = useCallback(async (metricId, value) => {
+    const dashboardField = METRIC_GOAL_DASHBOARD_FIELDS[metricId];
+    if (!dashboardField) throw new Error('That goal cannot be adjusted here.');
+
+    const saved = await api.updateMetricGoal(patientId, metricId, value);
+    setDashboardData((current) => ({
+      ...(current || {}),
+      [dashboardField]: saved.value,
+    }));
+    return saved;
+  }, [patientId]);
+
   const updateHealthConnection = async (provider, updates) => {
     const saved = await api.updateHealthConnection(patientId, provider, updates);
     setHealthConnections((items) => [
@@ -514,6 +535,7 @@ function PatientView({ user, onLogout, theme, setTheme }) {
             initialMetricId={breakdownMetric}
             aiEnabled={aiEnabled}
             onGenerateAiInsight={generateDashboardAiInsight}
+            onAdjustGoal={updateMetricGoal}
           />
         )}
         {screen === 'mood' && (

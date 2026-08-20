@@ -795,6 +795,15 @@ button {
   cursor: pointer;
 }
 
+/* The longer secondary score summaries stay within the phone-shaped canvas. */
+.focused-score-card:is([data-score-id="activity"], [data-score-id="consistency"]) {
+  max-height: min(460px, calc(100dvh - 168px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: color-mix(in srgb, var(--wellpath-accent) 48%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
 .focused-score-header {
   position: relative;
   display: flex;
@@ -2286,6 +2295,149 @@ button {
   font-size: 12px;
   line-height: 1.4;
 }
+
+.breakdown-suggestion-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.goal-adjustment {
+  display: grid;
+  gap: 8px;
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+}
+
+.goal-adjust-trigger,
+.goal-use-suggestion,
+.goal-manual-row > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.goal-adjust-trigger {
+  justify-self: start;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--metric-color, var(--wellpath-accent)) 46%, var(--line));
+  background: var(--surface);
+  color: var(--text);
+}
+
+.goal-adjust-trigger:hover {
+  border-color: var(--metric-color, var(--wellpath-accent));
+  background: color-mix(in srgb, var(--metric-color, var(--wellpath-accent)) 10%, var(--surface));
+}
+
+.goal-adjust-panel {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(var(--surface-rgb), 0.9);
+}
+
+.goal-use-suggestion {
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--metric-color, var(--wellpath-accent)) 56%, var(--line));
+  background: color-mix(in srgb, var(--metric-color, var(--wellpath-accent)) 14%, var(--surface));
+  color: var(--text);
+}
+
+.goal-use-suggestion:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--metric-color, var(--wellpath-accent)) 22%, var(--surface));
+}
+
+.goal-manual-form {
+  display: grid;
+  gap: 5px;
+}
+
+.goal-manual-form > label {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.goal-manual-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.goal-input-wrap {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.goal-input-wrap:focus-within {
+  border-color: var(--metric-color, var(--wellpath-accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--metric-color, var(--wellpath-accent)) 16%, transparent);
+}
+
+.goal-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 3px 8px 10px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.goal-input-wrap > span {
+  flex: 0 0 auto;
+  padding: 0 9px 0 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.goal-manual-row > button {
+  padding: 0 13px;
+  border: 1px solid var(--metric-color, var(--wellpath-accent));
+  background: var(--metric-color, var(--wellpath-accent));
+  color: #071d2b;
+}
+
+.goal-adjust-cancel {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.goal-adjust-panel button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.breakdown-suggestion .goal-adjust-message {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.breakdown-suggestion .goal-adjust-message.success { color: var(--green); }
+.breakdown-suggestion .goal-adjust-message.error { color: var(--coral); }
 
 .breakdown-connections {
   display: grid;

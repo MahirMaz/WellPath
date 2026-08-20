@@ -473,7 +473,7 @@ function FocusedScoreCard({ score, aiEnabled, personalized, aiInsight, aiStatus,
   const HeaderIcon = getScoreIcon(score.id);
 
   return (
-    <article className={`focused-score-card bubble-anim ${statusToneClass(score.status)}`} onClick={onClose} style={{ '--score-color': score.color }}>
+    <article className={`focused-score-card bubble-anim ${statusToneClass(score.status)}`} data-score-id={score.id} onClick={onClose} style={{ '--score-color': score.color }}>
       <div className="focused-score-header">
         <span className="focused-score-icon"><HeaderIcon size={22} /></span>
         <h2 tabIndex="0" aria-describedby={`score-description-${score.id}`}>{score.title}</h2>

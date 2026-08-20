@@ -30,6 +30,15 @@ async function requireOwnPatient(req, res, next) {
   }
 }
 
+const EDITABLE_METRIC_GOALS = Object.freeze({
+  steps: { column: 'step_goal', minimum: 500, maximum: 100000, precision: 0 },
+  sleep: { column: 'sleep_goal_hours', minimum: 1, maximum: 16, precision: 1 },
+  exercise: { column: 'exercise_goal_minutes', minimum: 1, maximum: 600, precision: 0 },
+  activeMinutes: { column: 'active_minute_goal', minimum: 1, maximum: 720, precision: 0 },
+  activeCalories: { column: 'active_calorie_goal', minimum: 25, maximum: 10000, precision: 0 },
+  sedentary: { column: 'sedentary_limit_hours', minimum: 1, maximum: 24, precision: 1 },
+});
+
 let supportTablesPromise;
 function ensurePatientSupportTables() {
   if (!supportTablesPromise) {
@@ -133,6 +142,35 @@ router.get('/:id/dashboard', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// PATCH /api/patient/:id/metric-goals
+// Saves patient-controlled lifestyle targets used by the dashboard and Breakdown.
+router.patch('/:id/metric-goals', requireOwnPatient, asyncRoute(async (req, res) => {
+  const metricId = String(req.body?.metricId || '');
+  const config = EDITABLE_METRIC_GOALS[metricId];
+  const requestedValue = Number(req.body?.value);
+
+  if (!config) {
+    return res.status(400).json({ error: 'That metric does not support a patient-adjustable goal.' });
+  }
+  if (!Number.isFinite(requestedValue) || requestedValue < config.minimum || requestedValue > config.maximum) {
+    return res.status(400).json({
+      error: `Enter a goal between ${config.minimum} and ${config.maximum}.`,
+    });
+  }
+
+  const value = config.precision === 0
+    ? Math.round(requestedValue)
+    : Number(requestedValue.toFixed(config.precision));
+
+  await pool.query(`
+    INSERT INTO patient_metric_preferences (patient_id, ${config.column})
+    VALUES (?, ?)
+    ON DUPLICATE KEY UPDATE ${config.column} = VALUES(${config.column})
+  `, [req.params.id, value]);
+
+  res.json({ metricId, value });
+}));
 
 // How many days of history an endpoint returns. Defaults to a full year so
 // long-term progress, seasonal views and correlations have enough data; callers
