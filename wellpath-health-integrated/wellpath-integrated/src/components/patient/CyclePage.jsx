@@ -384,6 +384,7 @@ function CycleFactors({ stats }) {
 export function CyclePage({ patientId, healthLog = [], aiEnabled = true, onGenerateAiInsight }) {
   const [periods, setPeriods] = useState([]);
   const [startInput, setStartInput] = useState(todayKey());
+  const [endInput, setEndInput] = useState('');
   const [saveNote, setSaveNote] = useState('');
   const [whyOpen, setWhyOpen] = useState(false);
   const [predictionOpen, setPredictionOpen] = useState(false);
@@ -407,12 +408,17 @@ export function CyclePage({ patientId, healthLog = [], aiEnabled = true, onGener
 
   const logStart = async () => {
     setSaveNote('');
+    if (endInput && endInput < startInput) {
+      setSaveNote('End date must be on or after the start date.');
+      return;
+    }
     try {
-      await api.logPeriod(patientId, startInput);
+      await api.logPeriod(patientId, startInput, endInput || null);
       await refresh();
+      setEndInput('');
       setSaveNote('Logged.');
     } catch (error) {
-      setSaveNote('Could not save — check the date and try again.');
+      setSaveNote('Could not save — check the dates and try again.');
     }
   };
 
@@ -436,14 +442,29 @@ export function CyclePage({ patientId, healthLog = [], aiEnabled = true, onGener
       </div>
 
       <section className="cycle-log-card cycle-log-top">
-        <strong>Log a period start</strong>
+        <strong>Log a period</strong>
+        <div className="cycle-log-fields">
+          <label className="cycle-log-field">
+            <span>Start date</span>
+            <input
+              type="date"
+              value={startInput}
+              max={todayKey()}
+              onChange={(e) => setStartInput(e.target.value)}
+            />
+          </label>
+          <label className="cycle-log-field">
+            <span>End date <em>(optional)</em></span>
+            <input
+              type="date"
+              value={endInput}
+              min={startInput}
+              max={todayKey()}
+              onChange={(e) => setEndInput(e.target.value)}
+            />
+          </label>
+        </div>
         <div className="cycle-log-row">
-          <input
-            type="date"
-            value={startInput}
-            max={todayKey()}
-            onChange={(e) => setStartInput(e.target.value)}
-          />
           <button type="button" className="cycle-log-btn" onClick={logStart}>
             <Plus size={15} /> Add
           </button>

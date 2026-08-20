@@ -830,6 +830,69 @@ button {
   color: var(--wellpath-accent);
 }
 
+/* Tappable score title: reveals the score description below the card. */
+.focused-score-title {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted color-mix(in srgb, var(--wellpath-accent) 55%, transparent);
+  text-underline-offset: 3px;
+}
+
+/* Percentage and status pill stack vertically, pushed to the right. */
+.focused-score-metric {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.score-info-text {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--wellpath-accent) 12%, rgba(var(--surface-rgb), 0.55));
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Cycle logger: start + end date fields side by side. */
+.cycle-log-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cycle-log-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.cycle-log-field > span {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.cycle-log-field > span em {
+  font-style: normal;
+  font-weight: 600;
+  text-transform: none;
+}
+.cycle-log-field input {
+  min-width: 0;
+  width: 100%;
+}
+
 .focused-score-header h2 {
   margin: 0;
   font-size: 20px;

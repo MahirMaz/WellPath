@@ -469,6 +469,7 @@ const FACTOR_TO_KPI = {
 };
 
 function FocusedScoreCard({ score, aiEnabled, personalized, aiInsight, aiStatus, onClose, onFactorClick }) {
+  const [showInfo, setShowInfo] = useState(false);
   if (!score) return null;
   const HeaderIcon = getScoreIcon(score.id);
 
@@ -476,13 +477,21 @@ function FocusedScoreCard({ score, aiEnabled, personalized, aiInsight, aiStatus,
     <article className={`focused-score-card bubble-anim ${statusToneClass(score.status)}`} data-score-id={score.id} onClick={onClose} style={{ '--score-color': score.color }}>
       <div className="focused-score-header">
         <span className="focused-score-icon"><HeaderIcon size={22} /></span>
-        <h2 tabIndex="0" aria-describedby={`score-description-${score.id}`}>{score.title}</h2>
-        <div className="focused-score-number">
-          <strong>{score.score ?? '--'}</strong>
-          <span>%</span>
+        <button
+          type="button"
+          className="focused-score-title"
+          aria-expanded={showInfo}
+          onClick={(event) => { event.stopPropagation(); setShowInfo((value) => !value); }}
+        >
+          <h2>{score.title}</h2>
+        </button>
+        <div className="focused-score-metric">
+          <div className="focused-score-number">
+            <strong>{score.score ?? '--'}</strong>
+            <span>%</span>
+          </div>
+          <em>{score.status}</em>
         </div>
-        <em>{score.status}</em>
-        <p className="focused-score-description" id={`score-description-${score.id}`}>{score.description}</p>
         <button className="score-collapse-btn" onClick={(event) => {
           event.stopPropagation();
           onClose();
@@ -490,6 +499,11 @@ function FocusedScoreCard({ score, aiEnabled, personalized, aiInsight, aiStatus,
           <ChevronUp size={17} />
         </button>
       </div>
+      {showInfo && (
+        <p className="score-info-text" id={`score-description-${score.id}`} onClick={(event) => event.stopPropagation()}>
+          {score.description}
+        </p>
+      )}
 
       {aiEnabled && (
         <div className="score-ai-insight">
