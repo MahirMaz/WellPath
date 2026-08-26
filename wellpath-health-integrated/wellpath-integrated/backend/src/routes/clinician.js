@@ -4,11 +4,9 @@ import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All routes require clinician role
 router.use(authenticate);
 router.use(authorize('clinician', 'dba'));
 
-// GET /api/clinician/patients
 router.get('/patients', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -32,7 +30,6 @@ router.get('/patients', async (req, res) => {
       ORDER BY pp.patient_id
     `);
 
-    // Add KPI data
     const patients = await Promise.all(rows.map(async (patient) => {
       const [kpis] = await pool.query(`
         SELECT 
@@ -67,12 +64,10 @@ router.get('/patients', async (req, res) => {
   }
 });
 
-// GET /api/clinician/patients/:id
 router.get('/patients/:id', async (req, res) => {
   try {
     const patientId = req.params.id;
 
-    // Get patient profile
     const [profile] = await pool.query(`
       SELECT 
         pp.patient_id,
@@ -98,7 +93,6 @@ router.get('/patients/:id', async (req, res) => {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    // Get latest health metrics
     const [health] = await pool.query(`
       SELECT *
       FROM patient_daily_health_fact
@@ -107,7 +101,6 @@ router.get('/patients/:id', async (req, res) => {
       LIMIT 1
     `, [patientId]);
 
-    // Get KPIs
     const [kpis] = await pool.query(`
       SELECT 
         k.kpi_name,
@@ -124,7 +117,6 @@ router.get('/patients/:id', async (req, res) => {
       )
     `, [patientId, patientId]);
 
-    // Get alerts
     const [alerts] = await pool.query(`
       SELECT
         alert_id,
@@ -139,7 +131,6 @@ router.get('/patients/:id', async (req, res) => {
       ORDER BY alert_date DESC
     `, [patientId]);
 
-    // Last 14 days (oldest -> newest) for trend sparklines in the Overview tab.
     const [trendRows] = await pool.query(`
       SELECT record_date, steps, sleep_hours, resting_heart_rate,
              exercise_minutes, systolic_bp, diastolic_bp
@@ -162,7 +153,6 @@ router.get('/patients/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/clinician/alerts/:alertId/resolve — mark an alert handled.
 router.patch('/alerts/:alertId/resolve', async (req, res) => {
   try {
     const [result] = await pool.query(
@@ -179,7 +169,6 @@ router.patch('/alerts/:alertId/resolve', async (req, res) => {
   }
 });
 
-// GET /api/clinician/signals
 router.get('/signals', async (req, res) => {
   try {
     const [rows] = await pool.query(`

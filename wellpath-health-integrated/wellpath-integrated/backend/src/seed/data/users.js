@@ -37,5 +37,5 @@ export const userPii = [
   profile({ user_id: 6, full_name: 'Jordan Lee', date_of_birth: '1990-03-15', height_inches: 68, weight_lbs: 170, gender: 'Non-binary', email: 'jordan@example.com' }),
   profile({ user_id: 7, full_name: 'Dr. Rivera', date_of_birth: '1985-07-22', height_inches: 66, weight_lbs: 145, gender: 'Female', email: 'rivera@example.com' }),
   profile({ user_id: 9, full_name: 'Morgan Chen', date_of_birth: '1988-02-14', height_inches: null, weight_lbs: null, gender: 'Not specified', email: 'admin@wellpath.example' }),
-  profile({ user_id: 8, full_name: 'Robert Hayes', date_of_birth: '1964-03-10', height_inches: 69, weight_lbs: 224, gender: 'Male', email: 'robert@example.com' }), // 62, BMI ~33 — the at-risk profile
+  profile({ user_id: 8, full_name: 'Robert Hayes', date_of_birth: '1964-03-10', height_inches: 69, weight_lbs: 224, gender: 'Male', email: 'robert@example.com' }), // 62, BMI ~33, the at-risk profile
 ];

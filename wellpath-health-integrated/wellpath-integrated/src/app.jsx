@@ -87,7 +87,6 @@ function App() {
     return <AuthPage onLogin={handleLogin} theme={theme} setTheme={setTheme} />;
   }
 
-  // Render the appropriate view based on role
   const renderView = () => {
     switch (role) {
       case 'trainer':

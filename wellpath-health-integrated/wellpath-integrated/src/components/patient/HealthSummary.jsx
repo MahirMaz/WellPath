@@ -20,9 +20,6 @@ const GOAL_EDITOR_CONFIG = Object.freeze({
   sedentary: { minimum: 1, maximum: 24, step: 0.1, suffix: 'hrs' },
 });
 
-// Metrics that add up across days, so a WEEKLY total is the natural way to frame
-// the goal (shown as the daily pace x7). Everything else (sleep per night,
-// sedentary hours) stays daily, since a weekly sum there is confusing.
 const WEEKLY_GOAL_METRICS = new Set(['steps', 'exercise', 'activeMinutes', 'activeCalories']);
 function goalCadence(cfg) {
   return WEEKLY_GOAL_METRICS.has(cfg?.id)
@@ -35,8 +32,6 @@ const mean = (arr) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length 
 const withUnit = (value, unit) => (unit ? `${value} ${unit}` : `${value}`);
 
 function metricConfigs(pd = {}) {
-  // Coerce every goal/range through num() — some come from DECIMAL DB columns as
-  // strings (e.g. "8.0"), which would otherwise fail Number.isFinite checks.
   return [
     { id: 'steps', key: 'steps', label: 'Steps', unit: '', dir: 'high', goal: num(pd.stepGoal), fmt: (v) => Math.round(v).toLocaleString() },
     { id: 'sleep', key: 'sleep', label: 'Sleep', unit: 'hrs', dir: 'high', goal: num(pd.sleepGoal), fmt: (v) => Number(v).toFixed(1) },
@@ -147,7 +142,6 @@ function buildConnections(healthLog) {
   for (const pair of CONNECTION_PAIRS) {
     const r = pearson(healthLog.map((d) => num(d[pair.a])), healthLog.map((d) => num(d[pair.b])));
     const abs = Math.abs(r);
-    // 0.35 floor keeps out weak/coincidental links (n=30 can throw up spurious ~0.3s).
     if (abs < 0.35) continue;
     const strength = abs >= 0.6 ? 'strong' : abs >= 0.45 ? 'clear' : 'mild';
     results.push({ text: r < 0 ? pair.neg : pair.pos, r, strength });
@@ -176,18 +170,12 @@ function percentile(values, p) {
   return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
-// Round a suggested goal to a tidy, metric-appropriate increment.
 const NICE_STEP = { steps: 100, activeCalories: 25, sleep: 0.1, sedentary: 0.1 };
 function roundNice(value, id) {
   const step = NICE_STEP[id] || 1;
   return Math.round(value / step) * step;
 }
 
-// Suggest a goal grounded in the patient's own recent data instead of an
-// arbitrary number: the level they already reach on their stronger days
-// (75th percentile for "higher is better", 25th for "lower is better").
-// Skips clinical metrics (heart rate range, blood pressure), which shouldn't be
-// self-adjusted from personal readings.
 function goalSuggestion(series, stats, cfg) {
   const coachable = cfg.dir === 'high' || cfg.id === 'sedentary';
   if (!coachable || !stats || series.length < 7) return null;
@@ -195,8 +183,6 @@ function goalSuggestion(series, stats, cfg) {
   const values = series.map((p) => p.value);
   const raw = cfg.dir === 'low' ? percentile(values, 0.25) : percentile(values, 0.75);
   const numericValue = roundNice(raw, cfg.id); // daily pace (what we store)
-  // Frame the suggested figure in the metric's natural cadence (weekly total for
-  // metrics that accumulate across days), while keeping numericValue daily.
   const cad = goalCadence(cfg);
   const shown = withUnit(cfg.fmt(numericValue * cad.factor), cfg.unit).trim();
   const hitRate = stats.total ? stats.hits / stats.total : 0;
@@ -220,8 +206,6 @@ function goalSuggestion(series, stats, cfg) {
   return { text, value: shown, numericValue, noun };
 }
 
-// Preset zoom windows for the Breakdown chart. The chart is freely zoomable/
-// pannable; these buttons just snap the window to a familiar span.
 const RANGE_OPTIONS = [
   { days: 30, short: '30D', label: 'Last 30 days' },
   { days: 90, short: '90D', label: 'Last 90 days' },
@@ -229,8 +213,6 @@ const RANGE_OPTIONS = [
 ];
 const MIN_ZOOM_DAYS = 7;
 
-// Clamp a [start,end] window (indices into the day log) to valid bounds, keeping
-// at least MIN_ZOOM_DAYS visible so you can't zoom past a week.
 function clampWindow(start, end, total, minLen = MIN_ZOOM_DAYS) {
   if (total <= 0) return { start: 0, end: 0 };
   const len = Math.max(minLen, Math.min(total, Math.round(end - start + 1)));
@@ -247,10 +229,7 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
   const menuRef = useRef(null);
 
   const total = healthLog.length;
-  // Zoomable window over the full day log (indices). Buttons snap it to a preset;
-  // wheel / pinch / drag on the chart adjust it freely. Starts on the last 30 days.
   const [view, setView] = useState(() => clampWindow(total - 30, total - 1, total));
-  // When new data arrives (fetch), reset to the most recent 30 days.
   useEffect(() => {
     setView(clampWindow(total - 30, total - 1, total));
   }, [healthLog]);
@@ -304,7 +283,6 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
     }
   };
 
-  // Close the metric dropdown when clicking outside it.
   useEffect(() => {
     if (!menu.open) return undefined;
     const onDown = (event) => {
@@ -318,25 +296,21 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
   const series = seriesOf(visibleLog, cfg, patientData);
   const stats = computeStats(series, cfg);
   const suggestion = goalSuggestion(series, stats, cfg);
-  // Connections use the full history — more data makes the correlations sturdier.
   const connections = buildConnections(healthLog);
   const color = METRIC_COLORS[cfg.id];
   const latest = series.length ? series[series.length - 1].value : null;
   const editorConfig = GOAL_EDITOR_CONFIG[cfg.id];
   const goalEditorOpen = goalEditorMetric === cfg.id;
-  // Goals are stored per-day; some metrics are shown/edited as a weekly total.
   const cad = goalCadence(cfg);
   const cadWordCap = cad.word.charAt(0).toUpperCase() + cad.word.slice(1);
 
   const openGoalEditor = () => {
     const baseDaily = Number.isFinite(cfg.goal) ? cfg.goal : suggestion?.numericValue;
-    // Editor works in the displayed cadence (weekly total for some metrics).
     setGoalDraft(Number.isFinite(baseDaily) ? String(baseDaily * cad.factor) : '');
     setGoalUpdate(null);
     setGoalEditorMetric(cfg.id);
   };
 
-  // `displayValue` is in the shown cadence; we convert back to a daily value to store.
   const saveAdjustedGoal = async (displayValue, source) => {
     const requestedDisplay = Number(String(displayValue).replace(/,/g, ''));
     const minDisplay = (editorConfig?.minimum ?? 0) * cad.factor;
@@ -376,8 +350,6 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
     saveAdjustedGoal(goalDraft, 'manual');
   };
 
-  // Caption reflects the visible window (a preset name, or the actual date range
-  // once the user has zoomed/panned to something custom).
   const firstDay = visibleLog[0];
   const lastDay = visibleLog[visibleLog.length - 1];
   const presetLabel = RANGE_OPTIONS.find((o) => o.days === activePreset)?.label;
@@ -434,8 +406,6 @@ export function HealthSummary({ patientId = null, healthLog = [], patientData = 
 
         <div className="breakdown-range" role="group" aria-label="Time range">
           {RANGE_OPTIONS.map((opt, i) => {
-            // Only offer a longer range once there's more history than the range
-            // below it — otherwise every range would snap to the same window.
             const available = total > (i === 0 ? 1 : RANGE_OPTIONS[i - 1].days);
             return (
               <button
@@ -623,8 +593,6 @@ function Stat({ label, value, sub, tone }) {
   );
 }
 
-// Centered moving average so a noisy daily line reads as a clear trend when many
-// days are on screen. Keeps nulls as nulls.
 function movingAverage(series, window) {
   const half = Math.floor(window / 2);
   return series.map((p, i) => {
@@ -644,8 +612,6 @@ function TrendChart({ series, color, goal, unit, fmt, view, setView, total }) {
   const gesture = useRef(null);        // { type: 'pan' | 'pinch', ... }
   const zoomable = Boolean(setView && total);
 
-  // Native, non-passive wheel listener so we can preventDefault (React's onWheel
-  // is passive). Re-bound when the window changes so it reads the latest view.
   useEffect(() => {
     const el = plotRef.current;
     if (!el || !zoomable) return undefined;
@@ -680,7 +646,6 @@ function TrendChart({ series, color, goal, unit, fmt, view, setView, total }) {
     .join(' ');
 
   const rawPoints = toPoints(series);
-  // When many days are visible, lead with a smoothed line (raw kept faint behind).
   const smoothPoints = dense ? toPoints(movingAverage(series, 7)) : null;
   const goalY = Number.isFinite(goal) ? yPct(goal) : null;
 
@@ -697,15 +662,12 @@ function TrendChart({ series, color, goal, unit, fmt, view, setView, total }) {
     const frac = Math.min(1, Math.max(0, (clientX - rect.left) / (rect.width || 1)));
     setHover(Math.round(frac * (series.length - 1)));
   };
-  // Pan by dragging: shift the day window by however many days the pointer moved.
   const panBy = (fromView, dxRatio) => {
     const len = fromView.end - fromView.start + 1;
     const start = fromView.start - Math.round(dxRatio * (len - 1));
     setView(clampWindow(start, start + len - 1, total));
   };
 
-  // One unified gesture pipeline over Pointer Events (mouse + touch + pen). Using
-  // pointer events only — mixing them with touch events double-fires on phones.
   const twoPointerDist = () => {
     const [a, b] = [...pointers.current.values()];
     return Math.hypot(a.x - b.x, a.y - b.y);
@@ -757,7 +719,6 @@ function TrendChart({ series, color, goal, unit, fmt, view, setView, total }) {
       if (g.moved) panBy(g.view, dx / width());
       return;
     }
-    // No active gesture: mouse hover only (touch has no hover).
     if (e.pointerType !== 'touch') hoverAt(e.clientX);
   };
   const onPointerUp = (e) => {
@@ -768,7 +729,6 @@ function TrendChart({ series, color, goal, unit, fmt, view, setView, total }) {
       startPan(); // dropped from a pinch back to single-finger pan
     } else if (pointers.current.size === 0) {
       gesture.current = null;
-      // A tap (no drag) reveals that day's value.
       if (g?.type === 'pan' && !g.moved) hoverAt(e.clientX);
     }
   };

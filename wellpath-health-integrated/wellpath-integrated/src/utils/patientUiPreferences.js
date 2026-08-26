@@ -35,8 +35,6 @@ export const DEFAULT_PATIENT_UI_PREFERENCES = {
   density: 'comfortable',
   startScreen: 'dashboard',
   reduceMotion: false,
-  // 'auto' = phone layout on narrow screens, wide layout on desktop.
-  // 'app' = always the phone layout. 'desktop' = always the wide layout.
   viewMode: 'auto',
 };
 
@@ -95,7 +93,6 @@ export function savePatientUiPreferences(userId, preferences) {
   try {
     window.localStorage.setItem(storageKey(userId), JSON.stringify(normalized));
   } catch {
-    // Preferences still apply for the active session if storage is unavailable.
   }
   return normalized;
 }

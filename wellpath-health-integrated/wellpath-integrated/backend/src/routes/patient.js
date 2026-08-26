@@ -7,7 +7,6 @@ const asyncRoute = (handler) => (req, res, next) => {
   Promise.resolve(handler(req, res, next)).catch(next);
 };
 
-// All routes require authentication
 router.use(authenticate);
 
 async function ownsPatientRecord(req, patientId) {
@@ -85,7 +84,6 @@ function ensurePatientSupportTables() {
   return supportTablesPromise;
 }
 
-// GET /api/patient/:id/dashboard
 router.get('/:id/dashboard', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -143,8 +141,6 @@ router.get('/:id/dashboard', async (req, res) => {
   }
 });
 
-// PATCH /api/patient/:id/metric-goals
-// Saves patient-controlled lifestyle targets used by the dashboard and Breakdown.
 router.patch('/:id/metric-goals', requireOwnPatient, asyncRoute(async (req, res) => {
   const metricId = String(req.body?.metricId || '');
   const config = EDITABLE_METRIC_GOALS[metricId];
@@ -172,16 +168,12 @@ router.patch('/:id/metric-goals', requireOwnPatient, asyncRoute(async (req, res)
   res.json({ metricId, value });
 }));
 
-// How many days of history an endpoint returns. Defaults to a full year so
-// long-term progress, seasonal views and correlations have enough data; callers
-// can pass ?days=N to request a smaller window. Capped to keep payloads sane.
 const historyDays = (req, fallback = 365) => {
   const n = parseInt(req.query.days, 10);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(Math.max(n, 1), 730);
 };
 
-// GET /api/patient/:id/trends  (?days=N, default 365)
 router.get('/:id/trends', async (req, res) => {
   try {
     const limit = historyDays(req);
@@ -226,8 +218,6 @@ router.get('/:id/trends', async (req, res) => {
   }
 });
 
-// ===== Mood log =====
-// One mood entry (1-5) per patient per day. Table auto-creates on first use.
 let moodTableReady = null;
 function ensureMoodTable() {
   if (!moodTableReady) {
@@ -248,7 +238,6 @@ function ensureMoodTable() {
   return moodTableReady;
 }
 
-// GET /api/patient/:id/mood — mood entries, oldest first (?days=N, default 365)
 router.get('/:id/mood', async (req, res) => {
   try {
     await ensureMoodTable();
@@ -267,7 +256,6 @@ router.get('/:id/mood', async (req, res) => {
   }
 });
 
-// POST /api/patient/:id/mood — upsert today's (or a given date's) mood
 router.post('/:id/mood', async (req, res) => {
   try {
     const { mood, date, note } = req.body;
@@ -291,8 +279,6 @@ router.post('/:id/mood', async (req, res) => {
   }
 });
 
-// ===== Period / cycle log =====
-// One row per logged period start. Table auto-creates on first use.
 let periodTableReady = null;
 function ensurePeriodTable() {
   if (!periodTableReady) {
@@ -315,7 +301,6 @@ function ensurePeriodTable() {
 
 const isDateString = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
 
-// GET /api/patient/:id/periods — recent logged cycles (oldest first)
 router.get('/:id/periods', async (req, res) => {
   try {
     await ensurePeriodTable();
@@ -333,7 +318,6 @@ router.get('/:id/periods', async (req, res) => {
   }
 });
 
-// POST /api/patient/:id/periods — log (or update) a period start
 router.post('/:id/periods', async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
@@ -356,7 +340,6 @@ router.post('/:id/periods', async (req, res) => {
   }
 });
 
-// DELETE /api/patient/:id/periods/:date — remove a mislogged start
 router.delete('/:id/periods/:date', async (req, res) => {
   try {
     if (!isDateString(req.params.date)) {
@@ -374,7 +357,6 @@ router.delete('/:id/periods/:date', async (req, res) => {
   }
 });
 
-// GET /api/patient/:id/goals
 router.get('/:id/goals', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -400,7 +382,6 @@ router.get('/:id/goals', async (req, res) => {
   }
 });
 
-// POST /api/patient/:id/goals
 router.post('/:id/goals', async (req, res) => {
   try {
     const { title, status } = req.body;
@@ -429,7 +410,6 @@ router.post('/:id/goals', async (req, res) => {
   }
 });
 
-// PATCH /api/patient/goals/:id
 router.patch('/goals/:id', async (req, res) => {
   try {
     const { status, title } = req.body;
@@ -460,10 +440,6 @@ router.patch('/goals/:id', async (req, res) => {
   }
 });
 
-// GET /api/patient/:id/care-team — the patient's assigned trainer & clinician,
-// plus the latest encouragement note their trainer wrote (read-only for the
-// patient). This is the destination for the note the trainer writes in their
-// own dashboard, closing the loop between the two views.
 router.get('/:id/care-team', async (req, res) => {
   try {
     const patientId = req.params.id;
@@ -623,7 +599,6 @@ router.delete('/:id/nutrition-logs/:logId', requireOwnPatient, asyncRoute(async 
   res.json({ success: true });
 }));
 
-// GET /api/patient/:id/profile
 router.get('/:id/profile', async (req, res) => {
   try {
     const [rows] = await pool.query(`

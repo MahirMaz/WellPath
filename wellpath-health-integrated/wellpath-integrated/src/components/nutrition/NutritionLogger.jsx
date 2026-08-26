@@ -29,12 +29,9 @@ function saveLocalEntries(patientId, entries) {
   try {
     window.localStorage.setItem(storageKey(patientId), JSON.stringify(entries));
   } catch {
-    // The log still works for this session if storage is unavailable.
   }
 }
 
-// Compact, token-friendly summary of the real meal log so the AI can read what
-// the user actually ate and draw grounded conclusions (never invent foods).
 function buildMealLogSummary(logged, dailyTotals, associations) {
   const days = dailyTotals.length;
   const avg = (key) => (days
@@ -74,7 +71,6 @@ function buildMealLogSummary(logged, dailyTotals, associations) {
   };
 }
 
-// ---- date helpers (local-time, no timezone drift on YYYY-MM-DD keys) ----
 const pad2 = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -92,11 +88,8 @@ function groupEntriesByDate(logged) {
   return map;
 }
 
-// Browsable meal history: switch between Month / Week / Day, page through time,
-// and see exactly what was eaten. The AI read of the whole log sits underneath.
 function MealHistory({ logged, aiEnabled, onGenerateAiInsight, mealInsight, mealInsightLoading, onReadMealLog }) {
   const [view, setView] = useState('month');
-  // Collapsed by default: the full calendar is opt-in, not forced on every user.
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState(() => {
     const dates = logged.map((e) => (e.recordDate || '').slice(0, 10)).filter(Boolean).sort();
@@ -105,8 +98,6 @@ function MealHistory({ logged, aiEnabled, onGenerateAiInsight, mealInsight, meal
   const byDate = useMemo(() => groupEntriesByDate(logged), [logged]);
   const today = new Date();
 
-  // Meals load asynchronously after mount, so jump to the most recent logged
-  // month the first time data arrives (then leave the user's browsing alone).
   const jumpedRef = useRef(false);
   useEffect(() => {
     if (jumpedRef.current) return;
@@ -259,8 +250,6 @@ export function NutritionLogger({ patientId, healthLog = [], aiEnabled = true, o
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [manual, setManual] = useState(BLANK_MANUAL);
-  // The database is the source of truth. Start empty and load from the server;
-  // the local cache is only a fallback for when the server can't be reached.
   const [logged, setLogged] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -281,8 +270,6 @@ export function NutritionLogger({ patientId, healthLog = [], aiEnabled = true, o
     return () => { cancelled = true; };
   }, [patientId]);
 
-  // Mirror the loaded server data into the local cache (never clobber it with
-  // the empty pre-load state).
   useEffect(() => {
     if (loaded) saveLocalEntries(patientId, logged);
   }, [loaded, logged, patientId]);

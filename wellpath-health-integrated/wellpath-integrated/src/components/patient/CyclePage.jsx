@@ -13,14 +13,7 @@ const daysBetween = (a, b) => Math.round((toDate(b) - toDate(a)) / DAY_MS);
 const fmtDate = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
-// ===== Prediction from cycle history + live signals =====
-// This is deliberately more than "last start + 28 days". It (1) weights recent
-// cycles more than older ones (EWMA), so it tracks how the cycle is trending
-// now, and (2) nudges the date earlier/later based on whether the body is
-// already showing premenstrual physiological signs. The AI then explains it.
 
-// How strongly recent physiology matches the premenstrual pattern (0 = no signs,
-// 1 = all tracked signals point that way). null when there's nothing to read.
 function premenstrualStrength(signals) {
   if (!signals || !signals.length) return null;
   const matching = signals.filter((s) => s.matches).length;
@@ -33,11 +26,6 @@ const ewmaOf = (arr, alpha) => {
   return e;
 };
 
-// Learn how strongly to weight recent cycles FROM this person's own history:
-// sweep candidate recency weights and keep the one that best predicted their
-// past cycles using only earlier data (walk-forward). Returns that weight plus
-// the model's typical out-of-sample error, which becomes the confidence window.
-// Falls back to a neutral default when there isn't enough history to validate.
 function fitCycleModel(lengths) {
   if (lengths.length < 4) return { alpha: 0.5, error: null, fitted: false };
   let best = { alpha: 0.5, error: Infinity };
@@ -53,10 +41,6 @@ function fitCycleModel(lengths) {
   return { alpha: best.alpha, error: Math.round(best.error * 10) / 10, fitted: true };
 }
 
-// Prediction confidence, derived from the model's own out-of-sample error and
-// how much history we could validate against. Tight, well-tested fit + more
-// cycles => higher confidence. This is a transparent heuristic on real values,
-// not a fabricated number.
 function predictionConfidence(errorDays, cyclesLogged, sd) {
   const e = Number.isFinite(errorDays) ? errorDays : (Number.isFinite(sd) ? sd : 4);
   const varScore = Math.max(0, Math.min(1, 1 - (e - 1) / 6)); // e<=1 -> 1, e>=7 -> 0
@@ -65,9 +49,6 @@ function predictionConfidence(errorDays, cyclesLogged, sd) {
   return Math.round(Math.max(0.45, Math.min(0.97, conf)) * 100);
 }
 
-// How much each cycle in the window is weighted (oldest..newest), summing to 1.
-// Normalized exponential recency weighting with the fitted decay: the newest
-// cycle carries the most, decaying smoothly into the past.
 function ewmaWeights(n, alpha) {
   const raw = [];
   for (let i = 0; i < n; i += 1) raw[i] = Math.pow(1 - alpha, n - 1 - i);
@@ -75,7 +56,6 @@ function ewmaWeights(n, alpha) {
   return raw.map((v) => v / sum);
 }
 
-// Are cycles getting longer, shorter, or holding steady lately?
 function cycleTrend(lengths) {
   if (lengths.length < 4) return 'Stable';
   const recent = lengths.slice(-3);
@@ -94,7 +74,6 @@ function computeCycleStats(periods, signals) {
   const cycles = [];
   for (let i = 1; i < starts.length; i += 1) {
     const length = daysBetween(starts[i - 1], starts[i]);
-    // Discard implausible gaps so one mistyped date can't wreck the estimate.
     if (length >= 15 && length <= 60) cycles.push({ length, start: starts[i] });
   }
   if (!cycles.length) return { enough: false, cycles: [], starts };
@@ -102,25 +81,18 @@ function computeCycleStats(periods, signals) {
   const recent = cycles.slice(-6).map((c) => c.length);
   const simpleAvg = mean(recent);
 
-  // Recency weight LEARNED from this person's history (not a fixed constant).
   const model = fitCycleModel(cycles.map((c) => c.length));
   const expectedLength = ewmaOf(recent, model.alpha);
 
   const sd = Math.sqrt(mean(recent.map((v) => (v - simpleAvg) ** 2)) || 0);
-  // Confidence window = the model's own out-of-sample error when we could fit
-  // it, else raw cycle variability.
   const errorDays = model.fitted ? model.error : sd;
   const window = Math.max(1, Math.round(errorDays));
   const lastStart = starts[starts.length - 1];
 
-  // Calendar baseline, then a bounded physiological nudge.
   const baseline = addDays(toDate(lastStart), Math.round(expectedLength));
   const baselineDaysUntil = daysBetween(todayKey(), dateKey(baseline.toISOString()));
   const strength = premenstrualStrength(signals);
 
-  // The nudge is capped by how reliable the fitted model is: clockwork history
-  // (small error) -> signals barely move the date; erratic history -> a little
-  // more say. Direction is a physiological prior; magnitude is data-driven.
   const signalCap = Math.max(1, Math.min(3, Math.round(errorDays)));
   let adjustmentDays = 0;
   if (strength !== null && baselineDaysUntil <= 7 && baselineDaysUntil >= -4) {
@@ -171,10 +143,6 @@ function computeCycleStats(periods, signals) {
   };
 }
 
-// ===== KPI corroboration =====
-// Compares the last 3 days against the 30-day baseline. Resting HR rising and
-// sleep dropping are the shifts that commonly precede a period, so we flag
-// whether the recent pattern matches that direction.
 const SIGNAL_FACTORS = [
   { key: 'hr', label: 'Resting heart rate', unit: 'bpm', premenstrual: 'up', digits: 0 },
   { key: 'sleep', label: 'Sleep', unit: 'hrs', premenstrual: 'down', digits: 1 },
@@ -201,12 +169,6 @@ function computeSignals(healthLog) {
   }).filter(Boolean);
 }
 
-// ===== Visual cycle timeline =====
-// One left-to-right bar = your current cycle in days. It labels the three things
-// on the bar itself so it reads without decoding a legend: where "today" falls
-// (a flagged marker), the cycle's start and predicted next period as the two
-// ends, and the ± uncertainty as a shaded band around the predicted day. Phase
-// colors sit quietly underneath as context, explained by the legend below.
 function CycleTimeline({ stats }) {
   const expLen = Math.max(10, Math.round(stats.expectedLength));
   const predDay = daysBetween(stats.lastStart, dateKey(stats.predicted.toISOString()));
@@ -224,10 +186,8 @@ function CycleTimeline({ stats }) {
   const winLeft = pos(Math.max(1, predDay - stats.window));
   const winWidth = Math.max(3, pos(predDay + stats.window + 1) - winLeft);
   const todayPct = pos(today);
-  // Keep the floating "today" flag from spilling off either edge.
   const flagPct = Math.max(15, Math.min(85, todayPct));
 
-  // Which day (and phase) sits under the cursor as you scrub across the bar.
   const [hover, setHover] = useState(null);
   const phaseAt = (day) => {
     if (day >= predDay - stats.window && day <= predDay + stats.window) return 'Predicted period';
@@ -291,10 +251,6 @@ function CycleTimeline({ stats }) {
   );
 }
 
-// ===== "Why this date?" transparent breakdown =====
-// Shows the real math: the recent cycle lengths, how much each is weighted by
-// the fitted recency model (actual EWMA weights), and the chain from those to
-// the predicted date. Nothing here is invented — it's the model, made visible.
 function CycleWhy({ stats }) {
   const lengths = stats.recentLengths || [];
   const weights = ewmaWeights(lengths.length, stats.fittedAlpha);
@@ -326,9 +282,6 @@ function CycleWhy({ stats }) {
   );
 }
 
-// ===== Prediction factors =====
-// Presents the inputs behind the estimate as neutral health information rather
-// than a product comparison.
 function CycleFactors({ stats }) {
   const signalMatch = stats.strength === null ? null : Math.round(stats.strength * 100);
   const factors = [

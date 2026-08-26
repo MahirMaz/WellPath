@@ -1,7 +1,5 @@
 import React from 'react';
 
-// A tiny inline trend line for provider dashboards. Tightens the y-range to the
-// data so ordinary day-to-day variation is visible instead of a flat line.
 export function Sparkline({ values = [], color = 'var(--wellpath-accent)', width = 104, height = 32 }) {
   const nums = values.map(Number).filter((v) => Number.isFinite(v));
   if (nums.length < 2) {

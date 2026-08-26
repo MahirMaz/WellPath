@@ -7,11 +7,6 @@ import { api } from '../../api';
 import { usePatientList } from './usePatientLocal.js';
 import { QuestionsCard } from './QuestionsCard.jsx';
 
-// The patient-facing Trainer tab (converted from the old Care Team page).
-// It leads with the patient's goals, then the basic health numbers a personal
-// trainer actually watches, plus places to log workouts and body weight, and a
-// notepad of questions to bring to a session. All self-tracked entries are kept
-// locally per patient (no backend table needed for the demo).
 const mean = (arr) => (arr.length ? arr.reduce((s, v) => s + (Number(v) || 0), 0) / arr.length : null);
 const fmtNum = (v, d = 0) =>
   (v == null || Number.isNaN(Number(v)) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: d }));
@@ -22,7 +17,6 @@ export function TrainerPage({ patientId, patientData = {}, healthLog = [], goals
   const [newGoal, setNewGoal] = useState('');
   const [goalMessage, setGoalMessage] = useState('');
 
-  // Self-tracked logs (persisted locally per patient).
   const [exercises, exerciseLog] = usePatientList(patientId, 'exercises');
   const [weights, weightLog] = usePatientList(patientId, 'weightlog');
 

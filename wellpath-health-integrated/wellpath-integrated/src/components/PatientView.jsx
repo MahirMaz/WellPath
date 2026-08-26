@@ -23,7 +23,6 @@ import {
   loadPatientUiPreferences, normalizePatientUiPreferences, savePatientUiPreferences,
 } from '../utils/patientUiPreferences.js';
 
-// ===== SAMPLE DATA (fallback) =====
 const weeklyTrend = [
   { day: 'Wed', steps: 7200, sleep: 6.2, sleepConsistency: 76, hr: 74, exercise: 35, activeMinutes: 42, caloriesBurned: 2100, sedentaryHours: 7, workoutCount: 1 },
   { day: 'Thu', steps: 6500, sleep: 5.7, sleepConsistency: 68, hr: 76, exercise: 30, activeMinutes: 38, caloriesBurned: 2040, sedentaryHours: 8, workoutCount: 1 },
@@ -189,7 +188,6 @@ function PatientView({ user, onLogout, theme, setTheme }) {
   const [healthConnections, setHealthConnections] = useState(defaultHealthConnections);
   const more = useBubbleReveal();
 
-  // Track viewport width so the 'auto' view mode picks phone vs desktop layout.
   const [isWideScreen, setIsWideScreen] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 860,
   );
@@ -208,7 +206,6 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     }
   }, [patientId]);
 
-  // Scroll to the top whenever the screen changes so a new tab starts at the top.
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [screen]);
@@ -217,11 +214,9 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     try {
       window.localStorage.setItem(aiPreferenceKey, String(aiEnabled));
     } catch {
-      // The setting still works for this session when storage is unavailable.
     }
   }, [aiEnabled, aiPreferenceKey]);
 
-  // Open the Breakdown page, optionally focused on a specific KPI's metric.
   const KPI_TO_BREAKDOWN = { calories: 'activeCalories' };
   const openBreakdown = useCallback((kpiId) => {
     setBreakdownMetric(kpiId ? (KPI_TO_BREAKDOWN[kpiId] || kpiId) : null);
@@ -312,8 +307,6 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     };
   }, [dashboardData, healthLog, user]);
 
-  // Seed the Risk Signal / Nutrition shared profile from the patient's own data
-  // so users don't re-type what the app already knows.
   const initialProfile = useMemo(() => {
     const p = {};
     if (currentPatient.age) p.age = Math.round(currentPatient.age);
@@ -345,17 +338,12 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     try {
       await api.updatePatientPreferences(patientId, { aiEnabled: next });
     } catch {
-      // The browser preference remains active when the API is unavailable.
     }
     return next;
   }, [patientId]);
 
-  // Cycle tracking only applies to some patients, so the tab is conditional
-  // (also keeps the nav from getting crowded for everyone else).
   const tracksCycle = String(dashboardData?.gender || '').toLowerCase() === 'female';
 
-  // Primary tabs live directly in the bottom bar; the rest tuck into a "More" popup
-  // so the bar doesn't get crowded.
   const nav = [
     ['dashboard', 'Today', Home],
     ['summary', 'Breakdown', Activity],
@@ -369,7 +357,6 @@ function PatientView({ user, onLogout, theme, setTheme }) {
     ['clinical', 'Health record', Stethoscope],
   ];
 
-  // ===== UPDATED: AI function with Groq API integration =====
   const askAi = async (metric, prompt) => {
     if (!aiEnabled) {
       setAiAnswer({
@@ -380,7 +367,6 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       return;
     }
 
-    // Set loading state
     setAiAnswer({
       metric: metric.label,
       prompt: prompt.label,
@@ -420,8 +406,6 @@ function PatientView({ user, onLogout, theme, setTheme }) {
       return 'AI insights are turned off. Turn them back on in Settings if you want generated explanations.';
     }
 
-    // Personalization memory: fold anything the user has told the app about
-    // themselves into every insight, so guidance stays tailored across tabs.
     const memory = getMemory(patientId);
     const payload = memory.length
       ? { ...target, targetContext: { ...(target.targetContext || {}), userMemory: memory } }

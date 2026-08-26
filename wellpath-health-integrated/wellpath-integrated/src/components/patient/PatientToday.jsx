@@ -69,8 +69,6 @@ function buildInsightRequest(cardType, card) {
 function buildInsightCacheKey(patientData, cardType, card) {
   const request = buildInsightRequest(cardType, card);
   const signature = hashString(JSON.stringify(request.targetContext));
-  // Bump this version (v2 -> v3 ...) whenever the insight style/prompt changes so
-  // the browser discards its old saved insights instead of showing stale text.
   return `wellpath-ai-insight:v6-useful:${patientData.name || 'patient'}:${cardType}:${card.id}:${signature}`;
 }
 
@@ -118,7 +116,6 @@ function buildInsightPrefetchQueue(scores, kpis) {
   return queue;
 }
 
-// A concrete "next move" per metric that needs attention.
 const NEXT_MOVE_ACTIONS = {
   bloodPressure: 'This reading is above your personal target. Recheck it when calm, and review a repeated pattern with a clinician.',
   heartRate: 'Your resting heart rate is outside its usual range — recheck it when rested and watch for a lasting pattern.',
@@ -130,8 +127,6 @@ const NEXT_MOVE_ACTIONS = {
   sedentary: 'You are sitting past your daily limit — stand and move for 3-5 minutes each hour.',
 };
 
-// Pick the single most important thing for this patient to act on right now,
-// based on their real KPI data. Returns the action text and which card it maps to.
 function buildBestNextMove(kpis = []) {
   const byId = (id) => kpis.find((kpi) => kpi.id === id);
   const isConcern = (id) => {
@@ -139,26 +134,20 @@ function buildBestNextMove(kpis = []) {
     return kpi && kpi.trendDirection === 'down';
   };
 
-  // 1. Clinical concerns first (safety): elevated blood pressure, or a resting
-  //    heart rate that is ABOVE baseline. A low resting HR is healthy, so it is
-  //    not treated as a concern here.
   if (isConcern('bloodPressure')) return { kpiId: 'bloodPressure', text: NEXT_MOVE_ACTIONS.bloodPressure };
   const hr = byId('heartRate');
   if (hr && hr.trendDirection === 'down' && /above/i.test(hr.statusLabel || '')) {
     return { kpiId: 'heartRate', text: NEXT_MOVE_ACTIONS.heartRate };
   }
 
-  // 2. The lifestyle metric furthest below its goal (progress = % of goal reached).
   const worst = ['sleep', 'steps', 'exercise', 'activeMinutes', 'calories']
     .map(byId)
     .filter((kpi) => kpi && Number.isFinite(kpi.progress) && kpi.progress < 85)
     .sort((a, b) => a.progress - b.progress)[0];
   if (worst) return { kpiId: worst.id, text: NEXT_MOVE_ACTIONS[worst.id] };
 
-  // 3. Sitting too much (near or over the daily limit).
   if (isConcern('sedentary')) return { kpiId: 'sedentary', text: NEXT_MOVE_ACTIONS.sedentary };
 
-  // 4. Everything on track.
   return { kpiId: null, text: 'You are on track across the board — keep your routine steady today.' };
 }
 
@@ -186,8 +175,6 @@ export function PatientToday({
   const personalized = patientId ? getMemory(patientId).length > 0 : false;
   const kpiRows = [];
 
-  // From a score's factor, jump to that metric's KPI card: collapse the score,
-  // expand the matching KPI, and scroll it into view.
   const openKpiFromFactor = (kpiId) => {
     if (!kpiId) return;
     setExpandedScore(null);
@@ -427,9 +414,6 @@ export function PatientToday({
   );
 }
 
-// ===== Sub-components for PatientToday =====
-// Map a score status to a color class: green (good/excellent), yellow
-// (moderate), red (needs attention), grey (missing data).
 function statusToneClass(status) {
   const s = String(status || '').toLowerCase();
   if (s.includes('excellent') || s.includes('good')) return 'status-good';
@@ -450,8 +434,6 @@ function ScoreCard({ score, onToggle }) {
   );
 }
 
-// Maps a score factor label to the KPI card it corresponds to (some factors,
-// like BMI and Age, have no matching KPI card and stay non-clickable).
 const FACTOR_TO_KPI = {
   Sleep: 'sleep',
   Activity: 'steps',
@@ -697,8 +679,6 @@ function formatBarValue(value, unit) {
   return Number(rounded).toLocaleString();
 }
 
-// Round a rough interval to a tidy 1/2/5 × 10ⁿ step (e.g. 380 → 500, 1400 → 2000)
-// so axis bounds land on readable numbers instead of raw data values.
 function niceStep(rough) {
   if (!(rough > 0)) return 1;
   const pow = Math.pow(10, Math.floor(Math.log10(rough)));
@@ -713,11 +693,6 @@ function BarTrend({ data, color, unit }) {
   const dataMax = Math.max(...values);
   const dataMin = Math.min(...values);
   const span = dataMax - dataMin;
-  // Tighten the axis to the data so ordinary day-to-day variation is visible
-  // (instead of anchoring to zero, which flattens everything into similar tall bars),
-  // then snap the bounds to nice round numbers — floor the min, ceil the max — for a
-  // slightly wider, more readable range. A genuine off-day (e.g. 10 steps) still drops
-  // the bar to the floor because it pulls dataMin, and the whole range, down with it.
   const step = niceStep(span > 0 ? span / 3 : Math.max(Math.abs(dataMax) * 0.1, 1));
   const axisMin = Math.max(0, Math.floor(dataMin / step) * step);
   let axisMax = Math.ceil(dataMax / step) * step;
@@ -736,8 +711,6 @@ function BarTrend({ data, color, unit }) {
         <div className="bar-trend-gridlines" aria-hidden="true"><span /><span /><span /></div>
         {data.map((point, index) => {
           const hasValue = point.value !== null && point.value !== undefined;
-          // Scale within the tightened [axisMin, axisMax] range across the full track,
-          // so the baseline sits on the bottom axis line and differences read clearly.
           const height = hasValue ? Math.max(3, Math.min(100, ((Number(point.value) - axisMin) / range) * 100)) : 0;
           const valueLabel = formatBarValue(point.value, unit);
           return (

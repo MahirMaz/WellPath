@@ -4,11 +4,9 @@ import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All routes require trainer role
 router.use(authenticate);
 router.use(authorize('trainer'));
 
-// GET /api/trainer/patients
 router.get('/patients', async (req, res) => {
   try {
     const trainerId = req.user.userId;
@@ -26,7 +24,6 @@ router.get('/patients', async (req, res) => {
       AND ca.end_date IS NULL
     `, [trainerId]);
 
-    // Get latest metrics for each patient
     const patients = await Promise.all(rows.map(async (patient) => {
       const [metrics] = await pool.query(`
         SELECT 
@@ -56,7 +53,6 @@ router.get('/patients', async (req, res) => {
         )
       `, [patient.patient_id, patient.patient_id]);
 
-      // Last 7 days (oldest -> newest) for sparklines in the trainer dashboard.
       const [trend] = await pool.query(`
         SELECT record_date, steps, sleep_hours, exercise_minutes, active_minutes, resting_heart_rate
         FROM patient_daily_health_fact
@@ -80,13 +76,11 @@ router.get('/patients', async (req, res) => {
   }
 });
 
-// GET /api/trainer/notes/:patientId
 router.get('/notes/:patientId', async (req, res) => {
   try {
     const { patientId } = req.params;
     const trainerId = req.user.userId;
 
-    // Verify trainer has access to this patient
     const [access] = await pool.query(`
       SELECT 1 FROM care_assignments 
       WHERE patient_id = ? 
@@ -113,7 +107,6 @@ router.get('/notes/:patientId', async (req, res) => {
   }
 });
 
-// PATCH /api/trainer/notes/:patientId
 router.patch('/notes/:patientId', async (req, res) => {
   try {
     const { patientId } = req.params;
@@ -124,7 +117,6 @@ router.patch('/notes/:patientId', async (req, res) => {
       return res.status(400).json({ error: 'Note content required' });
     }
 
-    // Verify trainer has access
     const [access] = await pool.query(`
       SELECT 1 FROM care_assignments 
       WHERE patient_id = ? 
@@ -136,7 +128,6 @@ router.patch('/notes/:patientId', async (req, res) => {
       return res.status(403).json({ error: 'No access to this patient' });
     }
 
-    // Check if note exists, update or insert
     const [existing] = await pool.query(
       'SELECT note_id FROM trainer_notes WHERE patient_id = ? ORDER BY note_id DESC LIMIT 1',
       [patientId]

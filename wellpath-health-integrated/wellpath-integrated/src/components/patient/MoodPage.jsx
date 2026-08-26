@@ -28,8 +28,6 @@ function pearson(pairs) {
 
 const dateKey = (value) => String(value).slice(0, 10);
 
-// Correlate mood with same-day physiology. Factors phrased for r > 0 meaning
-// "more of this goes with better mood".
 const MOOD_FACTORS = [
   { key: 'sleep', label: 'Sleep', pos: 'You tend to feel better after nights with more sleep.', neg: 'Your mood tends to dip after longer sleep — worth watching oversleeping.' },
   { key: 'activeMinutes', label: 'Active minutes', pos: 'More active days usually come with a better mood.', neg: 'Very active days tend to coincide with lower moods — pacing may help.' },
@@ -202,8 +200,6 @@ export function MoodPage({ patientId, healthLog = [], aiEnabled, onGenerateAiIns
   );
 }
 
-// 14-day mood chart: 1-5 scale on the left, gridlines, color-coded bars, and a
-// hover/tap tooltip with the emoji, score, and date per day.
 function MoodChart({ entries }) {
   const [hover, setHover] = useState(null);
 
@@ -238,8 +234,6 @@ function MoodChart({ entries }) {
                 <span
                   className="mood-chart-bar"
                   style={{
-                    // Map the 1-5 scale onto the track so a mood of 1 rests on the
-                    // "1" baseline and 5 reaches the top (keep a sliver for the low end).
                     height: `${Math.max(6, ((value - 1) / 4) * 100)}%`,
                     background: MOOD_COLORS[value] || 'var(--muted)',
                   }}

@@ -1,17 +1,9 @@
-// Seeds distinct, realistic meal histories for patients 2-6 so each demo profile
-// has an "eating personality" that produces interesting nutrition insights.
-// Patient 1 (Alex) already has a full year of balanced data and is left untouched.
-//
-// Run with:  node src/seed/seedFoodLogs.js
 import { pool } from '../config/db.js';
 
-// Each food: [name, kcal, protein, carbs, sugar, fibre, fat, satfat, sodium]
 const P = (name, kcal, protein, carbs, sugar, fibre, fat, satfat, sodium) =>
   ({ name, kcal, protein, carbs, sugar, fibre, fat, satfat, sodium });
 
-// ---- Persona food pools (breakfast / lunch / dinner / snack) ----
 const PERSONAS = {
-  // Maria (2) — Weight Management: big portions, sugary, frequent snacking.
   2: {
     label: 'high-calorie / sugary / large portions',
     breakfast: [
@@ -37,7 +29,6 @@ const PERSONAS = {
     snackChance: 0.85,
   },
 
-  // James (3) — Blood Pressure: sodium bomb, fast food, processed.
   3: {
     label: 'very high sodium / processed / fast food',
     breakfast: [
@@ -63,7 +54,6 @@ const PERSONAS = {
     snackChance: 0.6,
   },
 
-  // Sophie (4) — Fitness: very healthy, high protein & fibre, low sodium/satfat.
   4: {
     label: 'very healthy / high protein & fibre / lean',
     breakfast: [
@@ -89,7 +79,6 @@ const PERSONAS = {
     snackChance: 0.75,
   },
 
-  // Daniel (5) — Stress Management: comfort food, sugar, caffeine, late-night.
   5: {
     label: 'stress/comfort eating / sugar & caffeine / irregular late nights',
     breakfast: [
@@ -115,7 +104,6 @@ const PERSONAS = {
     snackChance: 0.9,
   },
 
-  // Robert (6, age 62) — Diabetes Prevention: refined carbs + sugar + satfat.
   6: {
     label: 'high refined carbs & sugar + high saturated fat',
     breakfast: [
@@ -166,7 +154,6 @@ async function seed() {
         { pool: persona.dinner, h: 18 + Math.floor(Math.random() * 3), m: [0, 15, 30][Math.floor(Math.random() * 3)] },
       ];
       if (Math.random() < persona.snackChance) {
-        // Daniel snacks late; others mid-afternoon/evening.
         const lateNight = pid === '5';
         plan.push({ pool: persona.snack, h: lateNight ? 22 + Math.floor(Math.random() * 2) : 15 + Math.floor(Math.random() * 4), m: [0, 20, 40][Math.floor(Math.random() * 3)] });
       }

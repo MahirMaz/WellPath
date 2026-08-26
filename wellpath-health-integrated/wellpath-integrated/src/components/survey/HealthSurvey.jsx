@@ -28,7 +28,6 @@ export default function HealthSurvey({ onExit }) {
   const canProceed = requiredMissing.length === 0;
   const consentDeclined = answers.consent_data_use === 'No, thanks';
 
-  // Keep the scroll area at the top on every screen change.
   useEffect(() => {
     const el = document.querySelector('.hs-body');
     if (el) el.scrollTop = 0;
@@ -60,7 +59,6 @@ export default function HealthSurvey({ onExit }) {
   const progress = phase === 'form' ? Math.round(((stepIndex) / steps.length) * 100)
     : phase === 'review' ? 96 : phase === 'done' ? 100 : 0;
 
-  // ---- computed results (only on the done screen) --------------------------
   const summary = useMemo(() => computeSummary(answers), [answers]);
   const snapshot = useMemo(() => computeWellnessSnapshot(answers, summary), [answers, summary]);
 
@@ -137,7 +135,6 @@ export default function HealthSurvey({ onExit }) {
   );
 }
 
-// ---------------------------------------------------------------------------
 function Welcome({ onStart }) {
   return (
     <section className="hs-welcome">
@@ -154,7 +151,6 @@ function Welcome({ onStart }) {
   );
 }
 
-// ---------------------------------------------------------------------------
 function Question({ q, value, onSet, onToggle }) {
   return (
     <div className="hs-q">
@@ -223,7 +219,6 @@ function Question({ q, value, onSet, onToggle }) {
   );
 }
 
-// ---------------------------------------------------------------------------
 function formatAnswer(v) {
   if (v === 'unknown') return 'Don’t know';
   if (Array.isArray(v)) return v.join(', ');
@@ -260,7 +255,6 @@ function Review({ steps, answers, onEdit }) {
   );
 }
 
-// ---------------------------------------------------------------------------
 function Done({ summary, snapshot, answers, onRestart, onExit }) {
   const metrics = [];
   if (summary.bmi) metrics.push({ label: 'BMI', value: summary.bmi });

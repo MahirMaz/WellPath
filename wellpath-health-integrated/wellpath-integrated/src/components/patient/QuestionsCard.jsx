@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { HelpCircle, Plus, Trash2, Check } from 'lucide-react';
 import { usePatientList } from './usePatientLocal.js';
 
-// A small add-to-list card for "questions to bring to your trainer/clinician".
-// Patient-authored only: type a question, add it, check it off once asked, or
-// remove it. Persisted locally per patient. No advice from the app itself.
 export function QuestionsCard({ patientId, name, title, placeholder }) {
   const [items, actions] = usePatientList(patientId, name);
   const [text, setText] = useState('');

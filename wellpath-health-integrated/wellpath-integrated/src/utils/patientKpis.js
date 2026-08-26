@@ -186,9 +186,6 @@ const sedentaryMeta = (current, limit) => {
 
   const usedRatio = Number(current) / Number(limit);
   return {
-    // Full ring = good (consistent with every other card). Ring shows headroom
-    // left under the limit and depletes as sedentary time rises: e.g. 5 of 8 hrs
-    // used -> 38% remaining. Empty ring = at/over the limit.
     progress: Math.round(Math.max(0, 1 - usedRatio) * 100),
     ringLabel: usedRatio <= 0.75 ? 'OK' : usedRatio <= 1 ? 'Near' : 'High',
     ringSubtext: `limit ${limit} hrs`,

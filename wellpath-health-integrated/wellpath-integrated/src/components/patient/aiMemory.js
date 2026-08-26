@@ -1,8 +1,5 @@
 import { api } from '../../api';
 
-// A small, transparent personalization memory kept per patient (on this device).
-// It holds durable facts the user has shared so the AI can tailor every insight.
-// Nothing here is medical record — it's the "things you told your coach" list.
 const key = (patientId) => `wellpath.aimemory.${patientId}`;
 const MAX_FACTS = 20;
 
@@ -21,7 +18,6 @@ export function setMemory(patientId, facts) {
   try {
     localStorage.setItem(key(patientId), JSON.stringify(facts.slice(-MAX_FACTS)));
   } catch {
-    /* storage unavailable */
   }
 }
 
@@ -41,8 +37,6 @@ export function addFact(patientId, fact) {
   return next;
 }
 
-// Ask the backend to pull any durable personal facts out of a typed message,
-// then merge the new ones into memory. Returns the updated memory list.
 export async function learnFromMessage(patientId, message) {
   if (!patientId || !message || !message.trim()) return getMemory(patientId);
   try {

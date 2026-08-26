@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 
-// Small helpers for patient-scoped data kept in localStorage (exercise log,
-// weight log, home BP readings, appointment notes). No backend needed — these
-// are the patient's own self-tracked entries for the demo.
 const storeKey = (patientId, name) => `wellpath.${name}.${patientId}`;
 
-// A list of entries (newest first). Returns [items, { add, remove, set }].
 export function usePatientList(patientId, name) {
   const [items, setItems] = useState([]);
 
@@ -24,7 +20,6 @@ export function usePatientList(patientId, name) {
     try {
       localStorage.setItem(storeKey(patientId, name), JSON.stringify(list));
     } catch {
-      /* storage unavailable — keep in memory only */
     }
   };
 
@@ -38,7 +33,6 @@ export function usePatientList(patientId, name) {
   ];
 }
 
-// A single free-text field (e.g. a notepad). Returns [text, save].
 export function usePatientText(patientId, name) {
   const [text, setText] = useState('');
 
@@ -56,7 +50,6 @@ export function usePatientText(patientId, name) {
     try {
       localStorage.setItem(storeKey(patientId, name), value);
     } catch {
-      /* ignore */
     }
   };
 

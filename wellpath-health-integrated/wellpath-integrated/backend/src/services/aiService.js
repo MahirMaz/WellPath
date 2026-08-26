@@ -7,10 +7,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
-// Support one or many Groq API keys. Each key from a SEPARATE Groq account has
-// its own daily token quota, so listing several here roughly multiplies the
-// budget. Multiple keys from the SAME account share one quota and won't help.
-// Set either GROQ_API_KEYS (comma-separated) or a single GROQ_API_KEY.
 function parseGroqApiKeys() {
   const raw = [
     ...(process.env.GROQ_API_KEYS ? process.env.GROQ_API_KEYS.split(',') : []),
@@ -22,36 +18,17 @@ function parseGroqApiKeys() {
 const groqApiKeys = parseGroqApiKeys();
 const groqClients = groqApiKeys.map((apiKey) => new Groq({ apiKey }));
 
-// Primary client kept for the general (non-targeted) insight path.
 const groq = groqClients[0] || new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Fast non-reasoning instruct model. gpt-oss-20b is a reasoning model that
-// spends its token budget on internal reasoning and often returns empty content
-// for short insights, so we default to llama-3.1-8b-instant (higher free daily
-// limit, faster, reliable). Override with GROQ_MODEL in .env if desired
-// (e.g. llama-3.3-70b-versatile for higher quality).
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 
-// Rotates the starting key so load is spread across accounts when no specific
-// key is preferred.
 let clientCursor = 0;
 
-// Route each insight type to a preferred key so score cards and KPI cards lean
-// on separate accounts: scores -> key 1, KPIs -> key 2. With only one key
-// configured, everything uses it. Failover still applies if the preferred key
-// is rate-limited, so a user is never blocked while the other key has capacity.
 function preferredClientIndex(insightType) {
   if (groqClients.length < 2) return 0;
   return insightType === 'score' ? 0 : 1;
 }
 
-/**
- * Create a chat completion, failing over to the next API key when one hits a
- * temporary/rate-limit error. Each request is fully self-contained, so keys
- * never need to coordinate — whichever key answers produces the same result.
- * When preferredIndex is given, that key is tried first (others as failover);
- * otherwise keys are used round-robin.
- */
 async function createCompletionWithFailover(params, preferredIndex = null) {
   const clientCount = groqClients.length;
   if (clientCount === 0) {
@@ -65,15 +42,12 @@ async function createCompletionWithFailover(params, preferredIndex = null) {
     const client = groqClients[index];
     try {
       const completion = await client.chat.completions.create(params);
-      // Advance the round-robin cursor only when no preferred key was requested.
       if (preferredIndex === null) {
         clientCursor = (index + 1) % clientCount;
       }
       return completion;
     } catch (error) {
       lastError = error;
-      // Only try another key for rate-limit/temporary errors. A genuine bad
-      // request (e.g. bad model name) would fail on every key, so bail early.
       if (!isTemporaryGroqError(error)) {
         throw error;
       }
@@ -88,9 +62,6 @@ async function createCompletionWithFailover(params, preferredIndex = null) {
 
 export const TARGETED_INSIGHT_FALLBACK = "I'm having trouble generating this insight right now. Please try again later.";
 
-// Pull durable personal facts out of a free-text message the user typed, so the
-// app can remember them and tailor future insights. Returns a JSON array of
-// short strings (empty when there's nothing lasting to remember).
 export async function extractMemoryFacts(message) {
   const text = String(message || '').trim();
   if (!text) return [];
@@ -191,9 +162,6 @@ async function requestTargetedInsight(systemPrompt, userPayload, preferredIndex 
   throw lastError;
 }
 
-/**
- * Generate health insights and recommendations for a patient
- */
 export async function generateHealthInsights(patientData, metrics, trends) {
   try {
     const systemPrompt = buildHealthPrompt(patientData, metrics, trends);
@@ -245,7 +213,6 @@ export async function generateTargetedDashboardInsight({
       targetContext,
     });
 
-    // Scores and KPIs prefer separate keys (with failover to the other).
     const preferredIndex = preferredClientIndex(insightType);
 
     let insight = await requestTargetedInsight(systemPrompt, targetPayload, preferredIndex);
@@ -269,14 +236,6 @@ export async function generateTargetedDashboardInsight({
   }
 }
 
-/**
- * Generate a concise, clinician-facing visit-prep briefing for a patient.
- *
- * Follows the app's core principle: the numbers, trends, and out-of-range flags
- * are computed deterministically upstream and passed in as `computed`; the model
- * only NARRATES them into a skimmable briefing. It never recalculates or invents
- * figures. Returns a structured object so the UI can render clean sections.
- */
 export async function generateClinicianSummary({ patientData, computed, alerts }) {
   const system = `You are a clinical-support assistant preparing a WellPath provider for a patient visit. You are given metrics, trends, and flags that were ALREADY computed from the patient's data. Narrate them into a brief, skimmable briefing — do NOT recalculate, invent, or add any number that is not in the provided data.
 
@@ -337,12 +296,6 @@ Rules:
   return summary;
 }
 
-/**
- * Draft a short, warm encouragement note a TRAINER can send to a patient.
- * The week's highlights are computed deterministically upstream and passed in as
- * `computed`; the model only turns them into a friendly, personal message that
- * the trainer will review and edit before saving. Returns a plain string.
- */
 export async function generateTrainerNote({ patientData, computed }) {
   const system = `You are helping a fitness trainer write a short, warm encouragement note to their client. You are given the client's recent activity highlights, already computed from their data. Write the note the trainer would send.
 
@@ -370,7 +323,6 @@ Rules:
   return clean;
 }
 
-// Pull the first JSON object out of a model response (handles stray prose / fences).
 function extractJsonObject(text) {
   const s = String(text || '');
   const a = s.indexOf('{');
@@ -379,10 +331,6 @@ function extractJsonObject(text) {
   return JSON.parse(s.slice(a, b + 1));
 }
 
-/**
- * Estimate nutrition for a free-text food/meal description via the LLM.
- * Returns approximate per-item totals; the caller sums them for the day.
- */
 export async function estimateFoodNutrition(foodText) {
   const system = `You are a nutrition estimator. Given a short description of a food or meal, estimate its nutrition for the amount described. If no quantity is given, assume ONE typical serving.
 Return ONLY a compact JSON object (no markdown, no commentary, no units inside values) with EXACTLY these keys:
@@ -418,9 +366,6 @@ All nutrient values are plain numbers (grams, except kcal and sodium_mg). Estima
   };
 }
 
-/**
- * Build the system prompt for health analysis
- */
 function buildHealthPrompt(patientData, metrics, trends) {
   const latest = metrics[metrics.length - 1] || {};
   const average = calculateAverages(trends);
@@ -462,7 +407,6 @@ If a value is N/A or missing, say that more data is needed for that part instead
 `;
 }
 
-// Drop null/undefined fields so we don't spend tokens sending empty values.
 function compactRecord(record) {
   if (!record || typeof record !== 'object') return {};
   return Object.fromEntries(
@@ -557,9 +501,6 @@ ${isCycle ? 'Cycle analysis — interpret the already-calculated prediction and 
 `;
 }
 
-/**
- * Calculate averages from trend data
- */
 function calculateAverages(metrics) {
   if (!metrics || metrics.length === 0) return {};
   
@@ -579,9 +520,6 @@ function calculateAverages(metrics) {
   };
 }
 
-/**
- * Determine trend direction
- */
 function getTrendDirection(trends) {
   if (!trends || trends.length < 3) return 'stable';
   

@@ -14,7 +14,6 @@ import {
 
 const router = express.Router();
 
-// Create the insight cache table once per process (no migration framework here).
 let cacheTableReady = null;
 function ensureInsightCacheTable() {
   if (!cacheTableReady) {
@@ -29,7 +28,6 @@ function ensureInsightCacheTable() {
         PRIMARY KEY (patient_id, insight_type, target_id)
       )
     `).catch((error) => {
-      // Reset so a later request can retry table creation.
       cacheTableReady = null;
       throw error;
     });
@@ -37,11 +35,6 @@ function ensureInsightCacheTable() {
   return cacheTableReady;
 }
 
-// Hash of everything that affects the generated text. When any underlying value
-// changes (including record_date rolling to a new day), the hash changes and the
-// cached insight is regenerated. Otherwise we serve the cached copy for free.
-// Bump INSIGHT_CACHE_VERSION whenever the prompt or model changes so old cached
-// insights are invalidated and regenerated in the new style.
 const INSIGHT_CACHE_VERSION = 'v7-cycle-adjust-guard';
 function buildInsightDataHash(payload) {
   return crypto
@@ -60,7 +53,6 @@ async function getCachedInsight(patientId, insightType, targetId, dataHash) {
     );
     return rows.length ? rows[0].insight_text : null;
   } catch (error) {
-    // Cache is an optimization; never let it break insight generation.
     console.error('AI insight cache read failed:', error);
     return null;
   }
@@ -80,7 +72,6 @@ async function storeCachedInsight(patientId, insightType, targetId, dataHash, in
   }
 }
 
-// POST /api/ai/insights
 router.post('/insights', authenticate, async (req, res) => {
   try {
     const { patientId, metricId, promptId, insightType, targetId, targetTitle, targetContext } = req.body;
@@ -111,7 +102,6 @@ router.post('/insights', authenticate, async (req, res) => {
       if (error.code !== 'ER_NO_SUCH_TABLE') throw error;
     }
 
-    // Get patient profile
     const [patientRows] = await pool.query(`
       SELECT 
         pp.patient_id,
@@ -129,7 +119,6 @@ router.post('/insights', authenticate, async (req, res) => {
 
     const patient = patientRows[0];
 
-    // Get latest health metrics
     const [healthRows] = await pool.query(`
       SELECT 
         f.steps,
@@ -169,7 +158,6 @@ router.post('/insights', authenticate, async (req, res) => {
       LIMIT 1
     `, [patientId]);
 
-    // Get 7-day trends
     const [trendRows] = await pool.query(`
       SELECT 
         steps,
@@ -189,7 +177,6 @@ router.post('/insights', authenticate, async (req, res) => {
       LIMIT 7
     `, [patientId]);
 
-    // Format data for AI
     const patientData = {
       name: patient.full_name,
       ageRange: patient.date_of_birth ? calculateAgeRange(patient.date_of_birth) : 'Adult',
@@ -237,7 +224,6 @@ router.post('/insights', authenticate, async (req, res) => {
         targetContext,
       });
 
-      // Serve a cached insight when the underlying data is unchanged (0 tokens).
       const cached = await getCachedInsight(patientId, insightType, targetId, dataHash);
       if (cached) {
         return res.json({
@@ -257,7 +243,6 @@ router.post('/insights', authenticate, async (req, res) => {
         targetContext,
       });
 
-      // Only cache real insights, never the "having trouble" fallback text.
       if (isCompleteInsightText(answer)) {
         await storeCachedInsight(patientId, insightType, targetId, dataHash, answer);
       }
@@ -269,10 +254,8 @@ router.post('/insights', authenticate, async (req, res) => {
       });
     }
 
-    // Generate AI insights
     const insights = await generateHealthInsights(patientData, metrics, trends);
 
-    // Check if we should respond with specific metric insight
     let answer = insights;
     
     if (metricId) {
@@ -294,9 +277,7 @@ router.post('/insights', authenticate, async (req, res) => {
   }
 });
 
-// ===== Clinician visit-prep summary =====
 
-// Average a numeric field across rows, ignoring null/NaN. Returns null if empty.
 function avgField(rows, key) {
   const values = rows
     .map((row) => Number(row[key]))
@@ -305,8 +286,6 @@ function avgField(rows, key) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-// Deterministic trend: compare the older half of the window with the recent half
-// and report direction + magnitude. `rows` are ordered oldest -> newest.
 function computeTrend(rows, key, digits = 0) {
   const series = rows
     .map((row) => Number(row[key]))
@@ -319,8 +298,6 @@ function computeTrend(rows, key, digits = 0) {
   const recentAvg = recent.reduce((s, v) => s + v, 0) / recent.length;
   const delta = recentAvg - olderAvg;
   const round = (n) => Number(n.toFixed(digits));
-  // A change under ~3% of the older average is treated as flat, so we don't
-  // narrate noise as a trend.
   const threshold = Math.abs(olderAvg) * 0.03;
   const direction = Math.abs(delta) < threshold ? 'flat' : delta > 0 ? 'up' : 'down';
   return {
@@ -333,8 +310,6 @@ function computeTrend(rows, key, digits = 0) {
   };
 }
 
-// Build the deterministic analysis the model will narrate. All numbers here are
-// computed from the DB, never by the LLM.
 function buildClinicianComputed(latest, trends) {
   const clamp1 = (n) => (Number.isFinite(Number(n)) ? Number(Number(n).toFixed(1)) : null);
   const bpSysMax = Number(latest.bp_systolic_target_max);
@@ -398,8 +373,6 @@ function buildClinicianComputed(latest, trends) {
   };
 }
 
-// POST /api/ai/clinician-summary  { patientId }
-// Clinician-facing visit-prep briefing. Restricted to clinician/dba roles.
 router.post('/clinician-summary', authenticate, authorize('clinician', 'dba'), async (req, res) => {
   try {
     const { patientId } = req.body;
@@ -474,7 +447,6 @@ router.post('/clinician-summary', authenticate, authorize('clinician', 'dba'), a
           disclaimer: 'AI-generated decision support. Not a diagnosis. Verify against the record.',
         });
       } catch {
-        // Corrupt cache row — fall through and regenerate.
       }
     }
 
@@ -498,9 +470,6 @@ router.post('/clinician-summary', authenticate, authorize('clinician', 'dba'), a
   }
 });
 
-// POST /api/ai/trainer-note-draft  { patientId }
-// Drafts an encouragement note for a trainer to review, edit, and save. The
-// activity highlights are computed here; the model only phrases them warmly.
 router.post('/trainer-note-draft', authenticate, authorize('trainer'), async (req, res) => {
   try {
     const { patientId } = req.body;
@@ -508,7 +477,6 @@ router.post('/trainer-note-draft', authenticate, authorize('trainer'), async (re
       return res.status(400).json({ error: 'Patient ID required' });
     }
 
-    // Trainer may only draft notes for their own assigned patients.
     const [access] = await pool.query(`
       SELECT pp.primary_focus, p.full_name
       FROM care_assignments ca
@@ -578,7 +546,6 @@ router.post('/trainer-note-draft', authenticate, authorize('trainer'), async (re
   }
 });
 
-// POST /api/ai/nutrition-estimate  { food: "2 slices pepperoni pizza" }
 router.post('/nutrition-estimate', authenticate, async (req, res) => {
   try {
     const { food } = req.body;
@@ -593,8 +560,6 @@ router.post('/nutrition-estimate', authenticate, async (req, res) => {
   }
 });
 
-// Extract durable personal facts from something the user typed, so future
-// insights can be tailored to them. Returns { facts: [] } (never throws to client).
 router.post('/remember', authenticate, async (req, res) => {
   try {
     const { message } = req.body;

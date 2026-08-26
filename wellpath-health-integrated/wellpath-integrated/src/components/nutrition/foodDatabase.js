@@ -1,6 +1,3 @@
-// Bundled demo food database for the Nutrition Logger's search/autocomplete.
-// Values are approximate per the listed serving (calories, grams, mg).
-// (Demo data — could be swapped for a live USDA FoodData Central search later.)
 export const FOODS = [
   { name: 'Apple', serving: '1 medium', kcal: 95, protein: 0.5, carbs: 25, sugar: 19, fibre: 4.4, fat: 0.3, satfat: 0.1, sodium: 2, potassium: 195, chol: 0 },
   { name: 'Banana', serving: '1 medium', kcal: 105, protein: 1.3, carbs: 27, sugar: 14, fibre: 3.1, fat: 0.4, satfat: 0.1, sodium: 1, potassium: 422, chol: 0 },

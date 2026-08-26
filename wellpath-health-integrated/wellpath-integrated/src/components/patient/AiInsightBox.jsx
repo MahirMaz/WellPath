@@ -2,20 +2,12 @@ import React, { useState } from 'react';
 import { Sparkles, ArrowUp, Check } from 'lucide-react';
 import { getMemory, learnFromMessage } from './aiMemory.js';
 
-// Small tag shown on an insight that was generated while the user has personal
-// context saved, so it's clear the guidance is tailored to them.
 export function PersonalizedHint() {
   return (
     <span className="ai-tailored"><Sparkles size={11} /> Tailored to what you&apos;ve shared</span>
   );
 }
 
-// Reusable AI box for the bottom of each tab: a short generated insight, a row
-// of tappable preset questions, and a field to type your own. Styled to match
-// the rest of the app (neutral surface, teal accent) rather than a bright card.
-// `onAsk(question)` should return the answer text (a promise). When the user
-// types their OWN question, we also let the AI remember any lasting personal
-// facts from it (via patientId) so future insights are tailored.
 export function AiInsightBox({
   title = 'AI insight',
   aiEnabled = true,

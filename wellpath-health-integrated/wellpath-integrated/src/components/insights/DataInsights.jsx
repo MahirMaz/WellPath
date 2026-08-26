@@ -2,11 +2,6 @@ import React from 'react';
 import { Dna, Activity, MapPin, TrendingUp, Database, Flag, Layers } from 'lucide-react';
 import './insights.css';
 
-// ---------------------------------------------------------------------------
-// Real numbers computed from public datasets (see data-research/*.md).
-// NHANES 2017-2018 (US, N=5,856) · CDC PLACES 2025 (2,956 counties) ·
-// StatsCan CCHS 2019-2020 (Canada, N=108,252, weighted to 32.1M).
-// ---------------------------------------------------------------------------
 const ACC = 'var(--wellpath-accent)';
 const CORAL = 'var(--coral)';
 const GREEN = 'var(--green)';
@@ -53,7 +48,6 @@ const canadaLifestyle = [
   { label: 'Normal / underweight', value: 3.7, color: GREEN },
   { label: 'Overweight / obese', value: 9.4, color: CORAL },
 ];
-// Gap between highest- and lowest-diabetes... county for each condition (percentage points), CDC PLACES.
 const countyGaps = [
   { label: 'High blood pressure', value: 42.5, color: CORAL },
   { label: 'Physical inactivity', value: 37.4, color: AMBER },
@@ -61,8 +55,6 @@ const countyGaps = [
   { label: 'Current smoking', value: 33.4, color: AMBER },
   { label: 'Diabetes', value: 22.2, color: ACC },
 ];
-// Independent effect on prediabetes+ odds, all KPIs mutually adjusted (logistic regression).
-// OR > 1 raises risk (coral), < 1 protective (green).
 const drivers = [
   { label: 'Older age', or: 2.67 },
   { label: 'Family history of diabetes', or: 2.00 },
@@ -91,7 +83,6 @@ function Bars({ data, max, unit = '%', decimals = 1 }) {
   );
 }
 
-// Diverging effect bars for odds ratios: length ∝ |ln(OR)|, colored by direction.
 function EffectBars({ data }) {
   const max = Math.max(...data.map((d) => Math.abs(Math.log(d.or))));
   return (
@@ -169,7 +160,6 @@ export function DataInsights() {
         <EffectBars data={drivers} />
         <div className="di-badge">Full-KPI model reaches <strong>AUC&nbsp;0.78</strong> (vs 0.71 for the simple score)</div>
       </Card>
-
 
       <Card icon={MapPin} kicker="Geography · CDC PLACES" title="Where you live matters — 5× swing"
         source="CDC PLACES 2025 · adult diagnosed diabetes across 2,956 US counties">

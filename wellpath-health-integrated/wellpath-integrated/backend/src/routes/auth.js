@@ -5,7 +5,6 @@ import { authenticate, generateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -74,7 +73,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// GET /api/auth/me
 router.get('/me', authenticate, async (req, res) => {
   try {
     const [users] = await pool.query(`

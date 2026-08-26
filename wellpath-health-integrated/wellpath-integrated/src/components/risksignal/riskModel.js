@@ -1,5 +1,3 @@
-// Native (JS) scorer for the exported per-condition NHANES logistic models.
-// Non-diagnostic: converts inputs into a qualitative BAND, never a raw probability.
 import multi from './multiModel.json';
 
 export const modelSet = multi;
@@ -24,7 +22,6 @@ export function computeCondition(cond, inputs) {
   const drivers = contributions
     .filter((d) => Math.abs(d.value) > 0.08)
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-  // Honest confidence label from cross-validated AUC.
   const confidence = cond.cv_auc >= 0.70 ? 'moderate' : cond.cv_auc >= 0.62 ? 'limited' : 'low';
   return { prob, band, drivers, confidence };
 }

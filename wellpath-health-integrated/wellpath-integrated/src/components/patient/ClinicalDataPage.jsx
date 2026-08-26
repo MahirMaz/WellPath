@@ -6,10 +6,6 @@ import {
 import { usePatientList } from './usePatientLocal.js';
 import { QuestionsCard } from './QuestionsCard.jsx';
 
-// Patient-facing "Clinician" tab: the raw numbers a clinician reviews, laid out
-// plainly, plus self-tracked home readings and a place to jot questions.
-// Deliberately no predictions, scores, or AI — just measured values, an
-// exportable daily log, and patient-authored entries.
 const fmt = (v, d = 0) =>
   (v == null || v === '' || Number.isNaN(Number(v)) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: d }));
 
@@ -47,7 +43,6 @@ export function ClinicalDataPage({ patientId, patientData = {}, healthLog = [] }
     if (d && !Number.isNaN(d.getTime())) return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     return row.day ?? '—';
   };
-  // `render` is for the on-screen table; `raw` is the unformatted value for CSV.
   const columns = [
     { key: 'date', label: 'Date', day: true, render: (r) => dateText(r), raw: (r) => dateText(r) },
     { key: 'steps', label: 'Steps', render: (r) => fmt(r.steps), raw: (r) => r.steps ?? '' },

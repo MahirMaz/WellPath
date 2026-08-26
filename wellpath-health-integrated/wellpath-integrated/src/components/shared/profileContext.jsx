@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { modelSet } from '../risksignal/riskModel.js';
 
-// One shared health profile so the Nutrition tab and the Risk Signal tab read/write
-// the SAME inputs — edit nutrition in one place, the risk bands react in the other.
 const D = modelSet.defaults;
 const DEFAULTS = {
   age: D.age, sex_female: D.sex_female, heightCm: D.heightCm, weightKg: D.weightKg,
@@ -15,7 +13,6 @@ const DEFAULTS = {
 const Ctx = createContext(null);
 
 export function HealthProfileProvider({ children, initial }) {
-  // Seed from the logged-in patient's real data where available, defaults otherwise.
   const seed = { ...DEFAULTS, ...(initial || {}) };
   const [profile, setProfile] = useState(seed);
   const set = (k, v) => setProfile((p) => ({ ...p, [k]: v }));

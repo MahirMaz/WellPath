@@ -1,4 +1,3 @@
-// API Client for WellPath Health
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 let authToken = null;
@@ -94,7 +93,6 @@ const request = async (endpoint, options = {}) => {
 export const api = {
   getHealth: () => request('/health'),
 
-  // Auth
   login: (email, password) => 
     request('/auth/login', {
       method: 'POST',
@@ -103,7 +101,6 @@ export const api = {
 
   getMe: () => request('/auth/me'),
 
-  // Patient
   getDashboard: (patientId) => request(`/patient/${patientId}/dashboard`),
   getTrends: (patientId) => request(`/patient/${patientId}/trends`),
   updateMetricGoal: (patientId, metricId, value) =>
@@ -180,7 +177,6 @@ export const api = {
   deleteGoal: (goalId) =>
     request(`/patient/goals/${goalId}`, { method: 'DELETE' }),
 
-  // Clinician
   getClinicianPatients: () => request('/clinician/patients'),
   getPatientDetails: (patientId) => request(`/clinician/patients/${patientId}`),
   getSignals: () => request('/clinician/signals'),
@@ -210,7 +206,6 @@ export const api = {
     }),
   getAuditEvents: (limit = 80) => request(`/clinician/audit?limit=${limit}`),
 
-  // Trainer
   getTrainerPatients: () => request('/trainer/patients'),
   getTrainerNote: (patientId) => request(`/trainer/notes/${patientId}`),
   getTrainerPlan: (patientId) => request(`/trainer/patients/${patientId}/plan`),
@@ -237,7 +232,6 @@ export const api = {
       body: JSON.stringify({ patientId }),
     }),
 
-  // Admin (aggregate operations only; no patient readings or private notes)
   getAdminOverview: () => request('/admin/overview'),
   getAdminUsers: () => request('/admin/users'),
   updateAdminUserStatus: (userId, status) =>

@@ -1,27 +1,3 @@
-// ============================================================================
-// WellPath Health Survey — question configuration (single source of truth)
-// ----------------------------------------------------------------------------
-// The whole survey is defined as data so questions can be added / reworded
-// without touching the component. See HEALTH_SURVEY_SPEC.md for the rationale.
-//
-// Question shape:
-//   {
-//     key,        // unique id, also the answer key
-//     label,      // the question
-//     help,       // optional sub-text
-//     type,       // 'single' | 'multi' | 'scale' | 'number' | 'text'
-//     options,    // for single / multi: array of strings
-//     scale,      // for scale: { min, max, minLabel, maxLabel }
-//     unit,       // for number: suffix shown in the field
-//     min, max, step,
-//     allowUnknown, // for number: renders a "Don't know" chip
-//     placeholder, maxLength, // for text / number
-//     required,   // only 4 questions are required (see spec)
-//     sensitive,  // shows an "Optional" tag + the `why` note
-//     why,        // one-line "why we ask" for sensitive questions
-//     showIf,     // (answers) => boolean — conditional visibility
-//   }
-// ============================================================================
 
 export const SURVEY_META = {
   title: 'WellPath Health Survey',
@@ -31,7 +7,6 @@ export const SURVEY_META = {
 };
 
 export const SURVEY_STEPS = [
-  // ---- 1. Consent -----------------------------------------------------------
   {
     id: 'consent',
     title: 'Before we start',
@@ -48,7 +23,6 @@ export const SURVEY_STEPS = [
     ],
   },
 
-  // ---- 2. About you ---------------------------------------------------------
   {
     id: 'about',
     title: 'About you',
@@ -101,7 +75,6 @@ export const SURVEY_STEPS = [
     ],
   },
 
-  // ---- 3. Body basics -------------------------------------------------------
   {
     id: 'body',
     title: 'Body basics',
@@ -137,7 +110,6 @@ export const SURVEY_STEPS = [
     ],
   },
 
-  // ---- 4. Family history & genetics ----------------------------------------
   {
     id: 'family',
     title: 'Family & inherited health',
@@ -161,7 +133,6 @@ export const SURVEY_STEPS = [
     ],
   },
 
-  // ---- 5. Lifestyle ---------------------------------------------------------
   {
     id: 'lifestyle',
     title: 'Everyday lifestyle',
@@ -179,7 +150,6 @@ export const SURVEY_STEPS = [
     ],
   },
 
-  // ---- 6. Movement ----------------------------------------------------------
   {
     id: 'movement',
     title: 'Movement',
@@ -194,7 +164,6 @@ export const SURVEY_STEPS = [
     ],
   },
 
-  // ---- 7. Your goal ---------------------------------------------------------
   {
     id: 'goal',
     title: 'Your goal',
@@ -206,11 +175,9 @@ export const SURVEY_STEPS = [
   },
 ];
 
-// ---- Derived / computed values -------------------------------------------
 export function computeSummary(a) {
   const out = {};
 
-  // BMI
   const h = Number(a.height_cm);
   const w = Number(a.weight_kg);
   if (h > 0 && w > 0) {
@@ -218,7 +185,6 @@ export function computeSummary(a) {
     out.bmi = Number((w / (m * m)).toFixed(1));
   }
 
-  // Diet score 0–10 (veg +, fast food −, sugary −)
   const vegMap = { '0–1': 0, '2–3': 2, '4–5': 3.5, '6+': 5 };
   const ffMap = { '0': 0, '1–2': -1, '3–4': -2, '5+': -3.5 };
   const sugMap = { '0': 0, '1': -0.5, '2': -1, '3+': -2 };
@@ -227,14 +193,12 @@ export function computeSummary(a) {
     out.dietScore = Math.max(0, Math.min(10, Math.round((raw + 5.5) * 10) / 10));
   }
 
-  // Steps band -> midpoint
   const stepMap = { 'Under 3k': 2000, '3–5k': 4000, '5–8k': 6500, '8–12k': 10000, '12k+': 14000 };
   if (a.daily_steps && stepMap[a.daily_steps] != null) out.steps = stepMap[a.daily_steps];
 
   return out;
 }
 
-// Illustrative 0–100 wellness snapshot for the closing screen (demo only).
 export function computeWellnessSnapshot(a, summary) {
   let score = 70;
   const factors = [];

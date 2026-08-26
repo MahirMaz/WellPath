@@ -1,93 +1,80 @@
-# WellPath Health
+# WellPath
 
-A role-based lifestyle analytics platform that helps people understand patterns in their
-activity, sleep, recovery, nutrition, and exercise — and gives the trainers, clinicians, and
-administrators around them the right view of that data, and nothing more.
-
-WellPath provides lifestyle support and trend monitoring only. It does **not** diagnose
-conditions, prescribe treatment, or replace professional medical care, and its language and
-data boundaries are designed around that principle.
+WellPath is a health tracking app I built to explore how the same set of health data can be shown
+very differently depending on who's looking at it. A patient, their trainer, their clinician, and
+an admin all use the app, but each one sees a different slice of the data. It's a lifestyle and
+trend-tracking tool, not a medical one - it doesn't diagnose anything or give treatment advice.
 
 <p align="center">
   <img src="poster_assets/patient-dashboard.png" alt="Patient dashboard" width="30%" />
   <img src="poster_assets/ai-card-insight.png" alt="AI metric explanation" width="30%" />
-  <img src="poster_assets/clinician-dashboard.png" alt="Clinician trend dashboard" width="30%" />
+  <img src="poster_assets/clinician-dashboard.png" alt="Clinician dashboard" width="30%" />
 </p>
 
-## Why it's built this way
+## The idea
 
-The core idea is **one dataset, four audiences, strict separation**. A patient's raw readings,
-private notes, mood entries, and AI conversations are visible to the patient — and deliberately
-invisible to an administrator, who sees only accounts, consent metadata, and audit events. Those
-boundaries are enforced on the server, not just hidden in the UI.
+There are four types of accounts and each gets its own version of the app:
 
-| Workspace | Device target | Sees | Never sees |
-|-----------|---------------|------|------------|
-| **Patient** | Phone-first daily app | Own metrics, breakdowns, mood/food logs, goals, optional AI explanations | Other patients' data |
-| **Trainer** | Phone-style support app | Assigned patients, workout plans, recovery context, session logs, encouragement notes | Clinical notes, diagnoses |
-| **Clinician** | Web / tablet review dashboard | Patient profiles, historical trends, non-diagnostic signals, secure notes, care plans, reports | — |
-| **Admin** | Desktop operations console | Accounts, roles, consent metadata, connection status, audit events | Individual readings, private notes, mood entries, AI conversations |
+- **Patient** - a phone app for your own daily metrics (activity, sleep, recovery, nutrition),
+  breakdowns, mood and food logs, goals, and optional AI explanations of what your numbers mean.
+- **Trainer** - a support view for the patients assigned to them: workout plans, recovery info,
+  session logs, and encouragement notes.
+- **Clinician** - a web/tablet dashboard for reviewing patient trends over time, with secure notes,
+  care plans, and reports.
+- **Admin** - an operations view for accounts, roles, consent info, and audit logs. Admins can't
+  see anyone's actual readings, notes, mood entries, or AI conversations.
 
-## Highlights
+The part I cared about most was keeping those boundaries real. The permission checks happen on the
+server, so an admin account can't just pull a patient's private data even if someone poked at the
+API directly.
 
-- **Authenticated, role-separated experiences** with JWT auth and server-side permission checks on every route.
-- **Patient personalization** — card visibility, order, spacing, start screen, section, animation, theme, and AI preferences, all persisted per user.
-- **Optional AI explanations** with a real opt-out that is enforced by the API, not just toggled in the client.
-- **Historical trend comparisons** written to avoid forecasting or diagnostic language, and nutrition association checks that require matched data and explicitly avoid claiming causation.
-- **Accessibility built in** — responsive light/dark interfaces for phone, tablet, and desktop, plus reduced-motion support.
-- **Health platform bridge points** for Apple HealthKit and Android Health Connect in installed builds.
+## Built with
 
-## Tech stack
+React + Vite on the frontend, an Express API on the backend, and MySQL for storage. Auth is JWT
+with bcrypt-hashed passwords. There's also a desktop web wrapper in `wellpath-health-web/`.
 
-**Frontend:** React 18, Vite, Lucide icons · **Backend:** Node.js, Express, JWT, bcrypt ·
-**Database:** MySQL · **Desktop wrapper:** synchronized web build in `wellpath-health-web/`.
+The AI explanations run through Groq. The important thing is the model never does the math - all the
+numbers, trends, and flags are calculated from the database first, and the model only puts them into
+plain sentences. That way it can't make up a stat.
 
-## Repository layout
+## Running it
 
-```
-wellpath-health-integrated/wellpath-integrated/   The integrated app (frontend + Express/MySQL backend)
-wellpath-condition-models/                        Companion ML work: multi-condition risk modeling & explainability
-wellpath-data-research/                            Population-health data research, analysis notebooks, and charts
-poster_assets/                                     Screenshots
-```
-
-## Running the app
-
-Requirements: Node.js, npm, and MySQL.
+You'll need Node, npm, and MySQL.
 
 ```bash
 cd wellpath-health-integrated/wellpath-integrated
 
-# 1. Import wellpath_health_dump.sql into a MySQL database named `wellpath_health`
-# 2. Configure the API
-cd backend
-cp .env.example .env          # add your MySQL credentials and a JWT secret
-npm install
-npm run seed                  # seeds sample accounts and health data
-npm run dev                   # API on http://localhost:3000
+# import wellpath_health_dump.sql into a MySQL db called `wellpath_health` first
 
-# 3. In a second terminal, start the frontend
+cd backend
+cp .env.example .env      # fill in your MySQL login and a JWT secret
+npm install
+npm run seed              # loads sample accounts + fake health data
+npm run dev               # API runs on port 3000
+
+# then in another terminal:
 cd ..
 npm install
-npm run dev                   # Vite dev server, usually http://127.0.0.1:5173
+npm run dev               # opens the Vite dev server, usually on 127.0.0.1:5173
 ```
 
-### Demo accounts
+The seeded accounts all use the password `password123`:
 
-All seeded accounts use the password `password123`.
+- patient: `alex@example.com`
+- trainer: `jordan@example.com`
+- clinician: `rivera@example.com`
+- admin: `admin@wellpath.example`
 
-| Role | Email |
-|------|-------|
-| Patient | `alex@example.com` |
-| Trainer | `jordan@example.com` |
-| Clinician | `rivera@example.com` |
-| Admin | `admin@wellpath.example` |
+## What's in the repo
 
-## Roadmap
+The main app is under `wellpath-health-integrated/wellpath-integrated`. There are also two side
+folders from the research part of the project: `wellpath-condition-models` (some ML work on health
+risk prediction) and `wellpath-data-research` (data analysis notebooks and charts). Screenshots live
+in `poster_assets`.
 
-- Native HealthKit / Health Connect permission and sync testing on physical devices.
-- Replace simulated readings with approved device or institutional test data.
-- Stronger explainable trend analysis that keeps non-diagnostic wording.
-- User-controlled reminders and notification delivery.
-- Organization-level admin policies, pagination, and production monitoring.
-- Expanded automated API authorization, browser, and accessibility coverage in CI.
+## Still to do
+
+- Real HealthKit / Health Connect syncing on an actual phone instead of simulated readings
+- Reminders and notifications
+- Better admin controls and pagination for bigger datasets
+- Some actual automated tests
