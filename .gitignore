@@ -65,3 +65,12 @@ tmp/
 
 # Local non-app extras (unrelated projects, scratch, datasets) — not part of the app
 WellPath Extras/
+
+# ---- Handoff / presentation artifacts (kept local, not in repo) ----
+*.zip
+*.pptx
+*.docx
+*.ndjson
+wellpath-health-frontend-handoff/
+laptop)
+*.bat
