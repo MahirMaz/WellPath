@@ -44,7 +44,6 @@ export const deriveKpiPlaceholderFields = (metric, dayIndex = 0, patientId = 1) 
   };
 };
 
-// Small deterministic PRNG so re-seeding always produces the same data.
 function mulberry32(seed) {
   return function () {
     seed |= 0;
@@ -61,16 +60,11 @@ const round = (value, digits = 0) => {
 };
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-// A full year of history so the app can show real long-term progress, support
-// month-over-month/seasonal views, and give the cycle predictor and correlation
-// features enough data to be meaningful.
 const HEALTH_HISTORY_DAYS = 365;
 
 export const generateDailyHealthData = () => {
   const data = [];
 
-  // `HEALTH_HISTORY_DAYS` consecutive days ending today (UTC), so the newest
-  // record is always "today" and the data reads as current/ongoing.
   const now = new Date();
   const endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const days = [];
@@ -80,27 +74,15 @@ export const generateDailyHealthData = () => {
     days.push(d.toISOString().slice(0, 10));
   }
 
-  // Each patient is a distinct "person" for the showcase — every profile has ONE
-  // clear headline problem that the dashboard, AI advice, and Risk Signal react to.
-  // These are the CURRENT (today) baselines:
-  //   Alex   (1) - severe sleep deprivation (~4.8 h) + shaky recovery
-  //   Maria  (2) - overweight/obese, sedentary, poor diet (metabolic / diabetes risk)
-  //   James  (3) - high blood pressure (~146/95), otherwise moderate
-  //   Sophie (4) - very sedentary (~2,900 steps, 11.5 h sitting)
-  //   Daniel (5) - chronic high stress (9/10) + poor diet
   const patientBaselines = {
     1: { steps: 8500, sleep: 4.8, hr: 76, exercise: 45, bp_sys: 118, bp_dia: 76, bmi: 23.5, calories: 2450, active: 50, workout: 3, diet: 7, stress: 6, sedentary: 6.5 },   // Alex  - sleep deprivation
     2: { steps: 3800, sleep: 6.8, hr: 78, exercise: 12, bp_sys: 128, bp_dia: 82, bmi: 31.5, calories: 1900, active: 15, workout: 1, diet: 3, stress: 6, sedentary: 11.0 },  // Maria - overweight / metabolic
     3: { steps: 7000, sleep: 6.9, hr: 74, exercise: 30, bp_sys: 146, bp_dia: 95, bmi: 26.5, calories: 2200, active: 34, workout: 2, diet: 5, stress: 5, sedentary: 7.5 },   // James - hypertension
     4: { steps: 2900, sleep: 7.0, hr: 74, exercise: 8,  bp_sys: 120, bp_dia: 78, bmi: 25.0, calories: 1950, active: 12, workout: 1, diet: 6, stress: 5, sedentary: 11.5 },  // Sophie- sedentary / low activity
     5: { steps: 6000, sleep: 6.2, hr: 80, exercise: 25, bp_sys: 126, bp_dia: 82, bmi: 26.0, calories: 2100, active: 30, workout: 2, diet: 3, stress: 9, sedentary: 8.0 },   // Daniel- chronic high stress + poor diet
-    6: { steps: 3500, sleep: 5.6, hr: 84, exercise: 8, bp_sys: 150, bp_dia: 96, bmi: 33.0, calories: 1850, active: 12, workout: 0, diet: 3, stress: 6, sedentary: 11.0 },  // Robert- older, high-RISK: obese, high BP, poor sleep, sedentary
+    6: { steps: 3500, sleep: 5.6, hr: 84, exercise: 8, bp_sys: 150, bp_dia: 96, bmi: 33.0, calories: 1850, active: 12, workout: 0, diet: 3, stress: 6, sedentary: 11.0 },  // Robert - older, high risk: obese, high BP, poor sleep, sedentary
   };
 
-  // Year-long progress: net change from one year ago -> today (now - yearAgo),
-  // per metric. Positive means the value is higher now than a year ago. This makes
-  // the "progress over the year" view show a real story per patient:
-  //   Maria improving a lot, James's activity declining, others steady/slight gains.
   const yearProgress = {
     1: { steps: 300, sleep: -1.4, hr: 5, exercise: 2, active: 2, sedentary: 0.8, stress: 1.5, bmi: 0.2, bp_sys: 2, bp_dia: 1, calories: 40 },        // Alex - sleep slid, stress crept up
     2: { steps: 900, sleep: 0.6, hr: -4, exercise: 5, active: 6, sedentary: -1.2, stress: -1.0, bmi: -1.4, bp_sys: -5, bp_dia: -3, calories: 120 }, // Maria - improving (slowly losing weight)
@@ -118,22 +100,16 @@ export const generateDailyHealthData = () => {
     const b = patientBaselines[patientId];
     const prog = yearProgress[patientId] || {};
     const rnd = mulberry32(patientId * 9973 + 12345);
-    // Roughly-normal noise centered on 0, about [-1.5, 1.5]. Each metric draws
-    // its own noise so metrics vary independently (realistic correlations).
     const noise = () => rnd() + rnd() + rnd() - 1.5;
 
-    // Value of a metric on a given day, trended from a year ago to today.
-    // p=0 is the oldest day, p=1 is today. delta is (now - yearAgo).
     const trend = (metric, p) => b[metric] - (prog[metric] || 0) * (1 - p);
 
     days.forEach((date, index) => {
       const p = lastIndex ? index / lastIndex : 1;
-      // Gentle seasonal wave (peaks ~late June, dips ~late December) for realism.
       const dObj = new Date(`${date}T00:00:00Z`);
       const doy = Math.floor((dObj - Date.UTC(dObj.getUTCFullYear(), 0, 0)) / 86400000);
       const seasonal = Math.cos(((doy - 172) / 365) * 2 * Math.PI); // ~+1 summer, ~-1 winter
 
-      // Trended baselines for this day.
       const bExercise = trend('exercise', p);
       const bActive = trend('active', p);
       const bSedentary = trend('sedentary', p);
@@ -141,16 +117,10 @@ export const generateDailyHealthData = () => {
       const bSteps = trend('steps', p);
       const bHr = trend('hr', p);
 
-      // Independent daily drivers (each draws its own noise), with a small seasonal
-      // lift to movement in warmer months.
       const exercise = Math.max(0, Math.round(bExercise * (1 + 0.07 * seasonal) + noise() * 10));
       const activeMinutes = Math.max(0, Math.round(bActive * (1 + 0.08 * seasonal) + noise() * 10));
       const sedentary = clamp(round(bSedentary * (1 - 0.05 * seasonal) + noise() * 1.1, 1), 1, 14);
 
-      // Realistic, detectable relationships the "Connections" feature can find:
-      // - more exercise -> a bit more sleep
-      // - more sitting  -> fewer steps that day
-      // - resting HR is lower with more sleep and higher with more sitting
       const sleep = clamp(round(bSleep + 0.03 * (exercise - bExercise) + noise() * 0.5, 1), 3.5, 9.5);
       const steps = Math.max(0, Math.round(bSteps * (1 + 0.05 * seasonal) - 420 * (sedentary - bSedentary) + noise() * 800));
       const hr = Math.round(bHr - 1.3 * (sleep - bSleep) + 0.9 * (sedentary - bSedentary) + noise() * 1.5);
@@ -185,17 +155,34 @@ export const generateDailyHealthData = () => {
   return data;
 };
 
-// Daily mood (1-5) derived from that day's physiology plus noise, so the mood
-// analysis has genuine signal. Mood responds to how each day deviates from the
-// patient's OWN baseline (a uniformly unhealthy patient still has better and
-// worse days), anchored around a personal base level set by overall health.
-export const generateMoodData = (dailyHealthData) => {
+const dateKey = (value) => String(value instanceof Date ? value.toISOString() : value).slice(0, 10);
+
+const buildPeriodDaySet = (periodData = []) => {
+  const dates = new Map();
+  for (const period of periodData) {
+    const patientId = Number(period.patient_id);
+    const start = new Date(`${dateKey(period.start_date)}T00:00:00Z`);
+    const end = new Date(`${dateKey(period.end_date || period.start_date)}T00:00:00Z`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
+
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      if (!dates.has(patientId)) dates.set(patientId, new Set());
+      dates.get(patientId).add(cursor.toISOString().slice(0, 10));
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+  }
+  return dates;
+};
+
+export const generateMoodData = (dailyHealthData, periodData = []) => {
   const byPatient = new Map();
   for (const day of dailyHealthData) {
     if (!byPatient.has(day.patient_id)) byPatient.set(day.patient_id, []);
     byPatient.get(day.patient_id).push(day);
   }
 
+  const periodDaysByPatient = buildPeriodDaySet(periodData);
   const moods = [];
   for (const [patientId, days] of byPatient) {
     const avg = (key) => days.reduce((s, d) => s + Number(d[key]), 0) / days.length;
@@ -203,38 +190,36 @@ export const generateMoodData = (dailyHealthData) => {
     const avgActive = avg('active_minutes');
     const avgStress = avg('stress_level');
     const avgSed = avg('sedentary_hours');
-    // Personal anchor: healthier overall habits -> higher typical mood.
     const base = Math.max(1.8, Math.min(4.2,
       3 + (avgSleep - 6.8) * 0.35 - (avgStress - 5) * 0.15 - (avgSed - 7) * 0.06
     ));
 
     for (const day of days) {
-      const rnd = mulberry32(patientId * 7919 + Number(String(day.record_date).slice(-2)) * 131);
+      const recordDate = dateKey(day.record_date);
+      const rnd = mulberry32(patientId * 7919 + Number(recordDate.slice(-2)) * 131);
       const noise = () => rnd() + rnd() - 1;
+      const isPeriodDay = periodDaysByPatient.get(patientId)?.has(recordDate) || false;
+      const shortSleep = Math.max(0, avgSleep - Number(day.sleep_hours));
       const raw =
         base +
         (Number(day.sleep_hours) - avgSleep) * 1.1 +
         (Number(day.active_minutes) - avgActive) * 0.025 -
         (Number(day.stress_level) - avgStress) * 0.3 -
         (Number(day.sedentary_hours) - avgSed) * 0.22 +
+        (shortSleep >= 0.7 ? -0.35 : 0) +
+        (isPeriodDay ? -0.75 : 0) +
         noise() * 0.35;
       moods.push({
         patient_id: patientId,
-        record_date: day.record_date,
+        record_date: recordDate,
         mood: Math.max(1, Math.min(5, Math.round(raw))),
+        note: isPeriodDay ? 'Cycle symptoms may be affecting mood.' : null,
       });
     }
   }
   return moods;
 };
 
-// Period history for patients who track cycles. Anchored to the current date so
-// the data always reads like a real, ongoing cycle: each patient is placed at a
-// plausible point in her current cycle (`dayInCycle`), then history walks backwards
-// using her typical cycle length plus small natural variation. This keeps stats and
-// predictions accurate over time — the next-period estimate always lands a realistic
-// few days/weeks out instead of drifting overdue as calendar time passes.
-// Keyed by patient_id -> { avgCycle, variability, periodDays, dayInCycle }.
 const CYCLE_PROFILES = {
   2: { avgCycle: 29, variability: 4, periodDays: 5, dayInCycle: 20 }, // Maria - a bit irregular, ~9 days out
   4: { avgCycle: 28, variability: 1, periodDays: 4, dayInCycle: 16 }, // Sophie - very regular, ~12 days out
@@ -242,15 +227,12 @@ const CYCLE_PROFILES = {
 
 export const generatePeriodData = () => {
   const rows = [];
-  // Today at UTC midnight, matching the UTC date math used below.
   const now = new Date();
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
   for (const [key, profile] of Object.entries(CYCLE_PROFILES)) {
     const patientId = Number(key);
     const rnd = mulberry32(patientId * 4241 + 77);
-    // Most recent period started (dayInCycle - 1) days ago, so she's currently
-    // that many days into her cycle as of today.
     const cursor = new Date(today);
     cursor.setUTCDate(cursor.getUTCDate() - (profile.dayInCycle - 1));
 
@@ -263,7 +245,6 @@ export const generatePeriodData = () => {
         start_date: start.toISOString().slice(0, 10),
         end_date: end.toISOString().slice(0, 10),
       });
-      // Step back one cycle (length varies naturally around the average).
       const jitter = Math.round((rnd() * 2 - 1) * profile.variability);
       cursor.setUTCDate(cursor.getUTCDate() - (profile.avgCycle + jitter));
     }

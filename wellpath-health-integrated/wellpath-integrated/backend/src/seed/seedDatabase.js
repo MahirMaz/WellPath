@@ -22,10 +22,8 @@ const seedDatabase = async () => {
     
     await ensureKpiPlaceholderSchema(connection);
 
-    // Disable foreign key checks
     await connection.query('SET FOREIGN_KEY_CHECKS = 0');
     
-    // Clear tables in reverse dependency order
     await connection.query('TRUNCATE TABLE trainer_notes');
     await connection.query('TRUNCATE TABLE goals');
     await connection.query('TRUNCATE TABLE recommendations');
@@ -44,10 +42,8 @@ const seedDatabase = async () => {
     
     await connection.query('SET FOREIGN_KEY_CHECKS = 1');
     
-    // Hash password (all users use 'password123')
     const hashedPassword = await bcrypt.hash('password123', 10);
     
-    // 1. Insert roles
     console.log('📝 Inserting roles...');
     for (const role of roles) {
       await connection.query(
@@ -56,7 +52,6 @@ const seedDatabase = async () => {
       );
     }
     
-    // 2. Insert users
     console.log('👤 Inserting users...');
     for (const user of users) {
       await connection.query(
@@ -65,7 +60,6 @@ const seedDatabase = async () => {
       );
     }
     
-    // 3. Insert user PII
     console.log('🔒 Inserting user PII...');
     for (const pii of userPii) {
       await connection.query(
@@ -87,7 +81,6 @@ const seedDatabase = async () => {
       );
     }
     
-    // 4. Insert patient profiles
     console.log('🏥 Inserting patient profiles...');
     for (const profile of patientProfiles) {
       await connection.query(
@@ -96,7 +89,6 @@ const seedDatabase = async () => {
       );
     }
     
-    // 5. Insert care assignments
     console.log('👨‍⚕️ Inserting care assignments...');
     for (const assignment of careAssignments) {
       await connection.query(
@@ -105,7 +97,6 @@ const seedDatabase = async () => {
       );
     }
 
-    // 5b. Insert patient metric preferences
     console.log('Inserting patient KPI targets and baselines...');
     for (const preferences of patientMetricPreferences) {
       await connection.query(`
@@ -129,7 +120,6 @@ const seedDatabase = async () => {
       ]);
     }
     
-    // 6. Insert daily health data
     console.log('📊 Inserting daily health data...');
     const dailyData = generateDailyHealthData();
     for (const data of dailyData) {
@@ -153,8 +143,8 @@ const seedDatabase = async () => {
       ]);
     }
     
-    // 6b. Insert mood log (derived from each day's physiology, so mood analysis
-    // has real signal). Table may not exist in older dumps, so create it first.
+    const periodData = generatePeriodData();
+
     console.log('🙂 Inserting mood log...');
     await connection.query(`
       CREATE TABLE IF NOT EXISTS patient_mood_log (
@@ -167,14 +157,13 @@ const seedDatabase = async () => {
       )
     `);
     await connection.query('TRUNCATE TABLE patient_mood_log');
-    for (const mood of generateMoodData(dailyData)) {
+    for (const mood of generateMoodData(dailyData, periodData)) {
       await connection.query(
-        'INSERT INTO patient_mood_log (patient_id, record_date, mood) VALUES (?, ?, ?)',
-        [mood.patient_id, mood.record_date, mood.mood]
+        'INSERT INTO patient_mood_log (patient_id, record_date, mood, note) VALUES (?, ?, ?, ?)',
+        [mood.patient_id, mood.record_date, mood.mood, mood.note || null]
       );
     }
 
-    // 6c. Insert period/cycle history for patients who track cycles.
     console.log('🩸 Inserting cycle history...');
     await connection.query(`
       CREATE TABLE IF NOT EXISTS patient_period_log (
@@ -187,14 +176,13 @@ const seedDatabase = async () => {
       )
     `);
     await connection.query('TRUNCATE TABLE patient_period_log');
-    for (const p of generatePeriodData()) {
+    for (const p of periodData) {
       await connection.query(
         'INSERT INTO patient_period_log (patient_id, start_date, end_date) VALUES (?, ?, ?)',
         [p.patient_id, p.start_date, p.end_date]
       );
     }
 
-    // 7. Insert KPI types
     console.log('📈 Inserting KPI types...');
     for (const kpi of kpiTypes) {
       await connection.query(
@@ -203,7 +191,6 @@ const seedDatabase = async () => {
       );
     }
     
-    // 8. Insert KPI values
     console.log('📊 Inserting KPI values...');
     const kpiValues = generateKpiValues();
     for (const kpi of kpiValues) {
@@ -213,7 +200,6 @@ const seedDatabase = async () => {
       );
     }
     
-    // 9. Insert goals
     console.log('🎯 Inserting goals...');
     let goalId = 1;
     for (let patientId = 1; patientId <= 6; patientId++) {
@@ -225,7 +211,6 @@ const seedDatabase = async () => {
       }
     }
     
-    // 10. Insert recommendations
     console.log('💡 Inserting recommendations...');
     let recId = 1;
     for (let patientId = 1; patientId <= 6; patientId++) {
@@ -238,7 +223,6 @@ const seedDatabase = async () => {
       }
     }
     
-    // 11. Insert trainer notes
     console.log('📝 Inserting trainer notes...');
     let noteId = 1;
     const trainerNotes = [
@@ -278,5 +262,4 @@ const seedDatabase = async () => {
   }
 };
 
-// Run the seed
 seedDatabase().catch(console.error);
