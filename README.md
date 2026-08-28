@@ -1,5 +1,10 @@
 # WellPath
 
+**🔗 Live demo: [well-path-seven.vercel.app](https://well-path-seven.vercel.app)** — on the login
+screen, click any demo account to sign in instantly (try a Patient first, then the Clinician and
+Admin to see how the same data changes per role). The backend is on a free tier, so the very first
+load after it's been idle can take ~30 seconds to wake up.
+
 WellPath is a health tracking app I built to explore how the same set of health data can be shown
 very differently depending on who's looking at it. A patient, their trainer, their clinician, and
 an admin all use the app, but each one sees a different slice of the data. It's a lifestyle and
