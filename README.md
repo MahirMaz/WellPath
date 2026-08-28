@@ -88,6 +88,9 @@ folders from the research part of the project: `wellpath-condition-models` (some
 risk prediction) and `wellpath-data-research` (data analysis notebooks and charts). Screenshots live
 in `poster_assets`.
 
+📄 For the full write-up — motivation, design decisions, the ML findings, and honest limitations —
+see the [project report](docs/WellPath-Report.pdf) (team academic report, Algonquin College CST3117).
+
 ## Still to do
 
 - Real HealthKit / Health Connect syncing on an actual phone instead of simulated readings

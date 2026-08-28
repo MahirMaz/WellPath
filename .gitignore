@@ -60,7 +60,7 @@ tmp/
 .slide6-edit/
 
 # ---- Local assistant/editor state ----
-.claude/settings.local.json
+.claude/
 *_BACKUP.pptx
 
 # Local non-app extras (unrelated projects, scratch, datasets) — not part of the app
