@@ -31,13 +31,12 @@ function AuthPage({ onLogin, theme, setTheme }) {
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const doLogin = async (loginEmail, loginPassword) => {
     setError('');
     setIsLoading(true);
 
     try {
-      const response = await api.login(email, password);
+      const response = await api.login(loginEmail, loginPassword);
       setAuthToken(response.token);
       setCurrentUser(response.user);
       onLogin(response.user);
@@ -46,6 +45,11 @@ function AuthPage({ onLogin, theme, setTheme }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    doLogin(email, password);
   };
 
   const demoAccounts = [
@@ -134,7 +138,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
         </form>
 
         <div className="demo-accounts">
-          <p>Demo accounts (password: password123)</p>
+          <p>Demo accounts — click any to sign in instantly</p>
           <div className="demo-grid">
             {demoAccounts.map((acc) => (
               <button
@@ -144,7 +148,9 @@ function AuthPage({ onLogin, theme, setTheme }) {
                   setEmail(acc.email);
                   setPassword('password123');
                   setSelectedRole(acc.roleId || acc.role.toLowerCase());
+                  doLogin(acc.email, 'password123');
                 }}
+                disabled={isLoading}
                 type="button"
               >
                 <span className="demo-role">{acc.name} · {acc.role}</span>
@@ -165,7 +171,7 @@ function AuthPage({ onLogin, theme, setTheme }) {
           <h1>Your health workspace.</h1>
           <p>
             WellPath keeps patient, trainer, clinician, and admin views separate.
-            All data is stored securely in your local database.
+            All data is stored securely in a dedicated database.
           </p>
           <div className="auth-points">
             <span>✓ Patient daily tracking</span>

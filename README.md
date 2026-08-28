@@ -58,12 +58,23 @@ npm install
 npm run dev               # opens the Vite dev server, usually on 127.0.0.1:5173
 ```
 
-The seeded accounts all use the password `password123`:
+## Demo accounts
 
-- patient: `alex@example.com`
-- trainer: `jordan@example.com`
-- clinician: `rivera@example.com`
-- admin: `admin@wellpath.example`
+On the login screen there's a row of demo accounts at the bottom — **click any one to sign
+in instantly**, no typing needed. (If you'd rather type them, every account uses the password
+`password123`.)
+
+Each role sees a different version of the app:
+
+- **Patient** — `alex@example.com` (also `maria@`, `james@`, `sophie@`, `daniel@`, `robert@` —
+  each is a different health profile, e.g. Alex is sleep-deprived, Maria is working on weight,
+  James has rising blood pressure).
+- **Trainer** — `jordan@example.com`
+- **Clinician** — `rivera@example.com`
+- **Admin** — `admin@wellpath.example`
+
+Try signing in as a patient first, then as the clinician to see the same data from the
+provider side, and the admin to see how little an operations account is allowed to see.
 
 ## What's in the repo
 
