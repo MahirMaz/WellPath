@@ -18,15 +18,22 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const stripSlash = (value) => value.replace(/\/+$/, '');
 const configuredOrigins = String(process.env.CORS_ORIGINS || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => stripSlash(origin.trim()))
   .filter(Boolean);
 
 app.use(cors({
   origin(origin, callback) {
-    const isLocal = !origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-    if (isLocal || configuredOrigins.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    const clean = stripSlash(origin);
+    const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(clean);
+    const isVercel = /^https:\/\/well-path[a-z0-9-]*\.vercel\.app$/.test(clean);
+    if (isLocal || isVercel || configuredOrigins.includes(clean)) {
       callback(null, true);
       return;
     }
